@@ -1,154 +1,108 @@
-# News2Context
+# News2Context v2.0
 
-新闻聚合与上下文提取工具 - 自动从 TopHub Data API 获取新闻源，提取正文内容，生成每日 Markdown 摘要。
+AI 驱动的智能新闻聚合系统，支持多任务隔离、CLI Agent 交互、REST API 和定时调度。
 
-## 📋 功能特性
+## ✨ 核心特性
 
-- ✅ 从 TopHub Data API 获取多个新闻源
-- ✅ 异步并发请求，提高抓取效率
-- ✅ 自动提取文章链接的正文内容
-- ✅ 按分类和日期组织新闻
-- ✅ 生成格式化的 Markdown 文档
-- ✅ 完善的日志记录和错误处理
-
-## 🛠️ 技术栈
-
-- **Python 3.10+**
-- **aiohttp**: 异步 HTTP 请求
-- **trafilatura**: 网页正文提取
-- **loguru**: 日志管理
-- **PyYAML**: 配置文件解析
-
-## 📁 项目结构
-
-```
-news2context/
-├── config/
-│   ├── news_sources.yaml      # 新闻源配置
-│   ├── .env                    # 环境变量（API Key）
-│   └── .env.example            # 环境变量模板
-├── src/
-│   ├── fetcher.py             # TopHub API 数据获取
-│   ├── extractor.py           # 文章内容提取
-│   ├── markdown_generator.py  # Markdown 生成
-│   └── main.py                # 主程序入口
-├── output/                     # 输出目录（按日期组织）
-│   └── YYYY-MM-DD/
-│       └── news_digest.md
-├── logs/                       # 日志文件
-├── requirements.txt
-└── README.md
-```
+- 🤖 **AI Agent 场景分析** - 根据用户角色智能推荐新闻源
+- 📋 **多任务隔离** - 每个任务独立数据库，配置锁定
+- 🔌 **插件化引擎** - 支持多种新闻源（TopHub、NewsAPI、RSS...）
+- 💻 **CLI 交互界面** - 友好的命令行交互体验
+- 🌐 **REST API 服务** - 支持外部系统调用
+- ⏰ **定时任务调度** - 自动化新闻采集
+- 🗄️ **向量数据库** - Weaviate 语义搜索
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
+### 安装依赖
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境变量
+### 配置系统
 
-复制 `.env.example` 为 `.env` 并配置 API Key：
-
+1. 复制配置模板：
 ```bash
 cp config/.env.example config/.env
 ```
 
-编辑 `config/.env`：
-
+2. 编辑 `config/.env`，填入 API Keys：
 ```env
-TOPHUB_API_KEY=your_api_key_here
-TOPHUB_API_BASE_URL=https://api.tophubdata.com
-OUTPUT_DIR=output
-LOG_DIR=logs
-MAX_CONCURRENT_REQUESTS=5
-REQUEST_TIMEOUT=30
-MAX_RETRIES=3
+OPENAI_API_KEY=sk-your-openai-key
+TOPHUB_API_KEY=your-tophub-key
 ```
 
-### 3. 配置新闻源
-
-编辑 `config/news_sources.yaml`，添加或修改新闻源：
-
-```yaml
-categories:
-  - name: "财经金融"
-    priority: 5
-    sources:
-      - name: "华尔街见闻-日排行"
-        hashid: "G2me3ndwjq"
-        url: "https://wallstreetcn.com"
+3. 验证配置：
+```bash
+python test_infrastructure.py
 ```
 
-### 4. 运行程序
+### 基本使用（v2.0 开发中）
 
 ```bash
-python src/main.py
+# 交互式采集
+news2context collect
+
+# 问答查询
+news2context chat
+
+# 创建定时任务
+news2context schedule create
+
+# 启动后台服务
+news2context daemon start
 ```
 
-程序将自动：
-1. 从 TopHub API 获取所有配置的新闻源
-2. 提取每篇文章的正文内容
-3. 生成按日期和分类组织的 Markdown 文件
-4. 输出到 `output/YYYY-MM-DD/news_digest.md`
+## 📖 文档
 
-## 📊 输出示例
+- [实施方案](docs/implementation_plan.md)
+- [开发任务](docs/task.md)
+- [API 文档](docs/api.md)（开发中）
 
-生成的 Markdown 文件包含：
+## 🏗️ 项目结构
 
-- 📑 目录（按分类）
-- 📰 各分类下的新闻源
-- 📝 每篇文章的标题、作者、时间、摘要和正文
-- 🔗 原文链接
-
-## 🔧 配置说明
-
-### 环境变量
-
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| `TOPHUB_API_KEY` | TopHub API 密钥 | 必填 |
-| `TOPHUB_API_BASE_URL` | API 基础 URL | `https://api.tophubdata.com` |
-| `OUTPUT_DIR` | 输出目录 | `output` |
-| `LOG_DIR` | 日志目录 | `logs` |
-| `MAX_CONCURRENT_REQUESTS` | 最大并发请求数 | `5` |
-| `REQUEST_TIMEOUT` | 请求超时时间（秒） | `30` |
-| `MAX_RETRIES` | 最大重试次数 | `3` |
-
-### 新闻源配置
-
-在 `config/news_sources.yaml` 中配置新闻源：
-
-```yaml
-categories:
-  - name: "分类名称"
-    priority: 5  # 优先级（1-5）
-    sources:
-      - name: "新闻源名称"
-        hashid: "TopHub hashid"
-        url: "网站 URL"
+```
+news2context/
+├── config/              # 配置文件
+├── src/
+│   ├── cli/            # CLI 命令
+│   ├── core/           # 核心业务
+│   ├── engines/        # 新闻源引擎
+│   ├── api/            # REST API
+│   ├── scheduler/      # 定时任务
+│   ├── storage/        # 数据存储
+│   └── utils/          # 工具模块
+├── logs/               # 日志文件
+└── data/               # 数据文件
 ```
 
-## 📝 日志
+## 🔧 开发状态
 
-日志文件保存在 `logs/` 目录下，按日期轮转：
+- ✅ **v1.0**: 基础新闻爬取功能
+- 🚧 **v2.0**: 正在开发中
+  - ✅ Phase 1: 基础架构（70% 完成）
+  - ⏳ Phase 2: 任务管理系统
+  - ⏳ Phase 3-8: 待开始
 
-- 文件名格式：`news2context_YYYYMMDD.log`
-- 保留期限：30 天
-- 日志级别：DEBUG
+## 📝 更新日志
 
-## 🔄 定时任务（待实现）
+### v2.0.0-alpha (2025-11-26)
 
-可以使用 cron 或其他定时任务工具每天自动运行：
+**Phase 1: 基础架构重构**
+- ✅ 新目录结构
+- ✅ 配置系统（YAML + 环境变量）
+- ✅ 插件化引擎架构
+- ✅ TopHub 引擎实现
+- ✅ 引擎工厂
 
-```bash
-# 每天早上 6:00 运行
-0 6 * * * cd /path/to/news2context && python src/main.py
-```
+### v1.0.0 (2025-11-25)
 
-## 📄 许可证
+- ✅ TopHub API 集成
+- ✅ 多策略内容提取（69.5% 成功率）
+- ✅ Markdown 摘要生成
+
+## 📄 License
 
 MIT License
 
@@ -158,4 +112,5 @@ MIT License
 
 ---
 
-**生成时间**: 2025-11-25
+**开发团队**: News2Context Team  
+**最后更新**: 2025-11-26

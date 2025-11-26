@@ -1,0 +1,64 @@
+# News2Context v2.0 配置文件
+
+# ==================== LLM 配置 ====================
+llm:
+  provider: openai              # openai, anthropic, azure, local
+  api_key: ""                   # 从环境变量读取: OPENAI_API_KEY
+  base_url: https://api.openai.com/v1
+  model: gpt-4
+  temperature: 0.7
+  max_tokens: 2000
+
+# ==================== 新闻源引擎配置 ====================
+news_sources:
+  # 当前激活的引擎
+  active_engine: tophub
+  
+  # 各引擎配置
+  engines:
+    # TopHub 引擎
+    tophub:
+      enabled: true
+      api_key: ""               # 从环境变量读取: TOPHUB_API_KEY
+      base_url: https://api.tophubdata.com
+      timeout: 30
+      max_retries: 3
+      # 可选：允许的新闻源白名单（留空则允许所有）
+      allowed_sources: []
+    
+    # NewsAPI 引擎（预留）
+    newsapi:
+      enabled: false
+      api_key: ""
+      base_url: https://newsapi.org/v2
+      country: cn
+      language: zh
+    
+    # 自定义 RSS 引擎（预留）
+    custom_rss:
+      enabled: false
+      feeds: []
+
+# ==================== Weaviate 配置 ====================
+weaviate:
+  url: http://localhost:8080
+  api_key: ""                   # 可选
+  
+# ==================== API 服务配置 ====================
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - "*"
+
+# ==================== 内容提取配置 ====================
+extractor:
+  timeout: 60
+  max_concurrent: 3
+  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+# ==================== 日志配置 ====================
+logging:
+  level: INFO
+  format: "json"
+  file: logs/news2context.log
