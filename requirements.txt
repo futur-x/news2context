@@ -1,0 +1,19 @@
+# HTTP 请求
+aiohttp==3.9.1
+httpx==0.25.2
+
+# HTML 解析与内容提取
+beautifulsoup4==4.12.2
+lxml==4.9.2
+trafilatura==1.6.3
+
+# 配置管理
+python-dotenv==1.0.0
+PyYAML==6.0.1
+
+# 日志
+loguru==0.7.2
+
+# 工具库
+python-dateutil==2.8.2
+newspaper3k==0.2.8

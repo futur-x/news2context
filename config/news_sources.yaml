@@ -1,0 +1,32 @@
+# News2Context 新闻源配置文件
+# 测试阶段：5个新闻源
+
+categories:
+  - name: "财经金融"
+    priority: 5
+    sources:
+      - name: "华尔街见闻-日排行"
+        hashid: "G2me3ndwjq"
+        url: "https://wallstreetcn.com"
+      
+      - name: "第一财经-头条"
+        hashid: "1Vd5rL8e85"
+        url: "https://yicai.com"
+  
+  - name: "科技互联网"
+    priority: 4
+    sources:
+      - name: "36氪-24小时热榜"
+        hashid: "Q1Vd5Ko85R"
+        url: "https://36kr.com"
+      
+      - name: "虎嗅网-热文"
+        hashid: "5VaobgvAj1"
+        url: "https://huxiu.com"
+  
+  - name: "政策与宏观经济"
+    priority: 5
+    sources:
+      - name: "中国政府网-最新政策"
+        hashid: "47o8ELqvMm"
+        url: "https://gov.cn"
