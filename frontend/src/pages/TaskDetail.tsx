@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { taskAPI, externalAPI, chatAPI } from '../api/client'
+import api from '../api/client'
 import './TaskDetail.css'
 import './TaskDetailExtras.css'
 
@@ -74,8 +75,10 @@ function TaskDetail() {
 
         setSearching(true)
         try {
-            const response = await externalAPI.query(taskName!, {
+            // Use internal query API (no token required)
+            const response = await api.post('/query', {
                 query: searchQuery,
+                task_name: taskName,
                 limit: 5
             })
             setSearchResults(response.data.results || [])
