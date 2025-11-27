@@ -1,0 +1,281 @@
+"""
+任务管理器
+负责任务的创建、读取、更新、删除（CRUD）
+"""
+
+import os
+import yaml
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+from loguru import logger
+
+
+class TaskConfig:
+    """任务配置类"""
+    
+    def __init__(self, data: Dict[str, Any]):
+        self.name = data['name']
+        self.scene = data['scene']
+        self.created_at = data['created_at']
+        self.locked = data.get('locked', True)
+        self.sources = data['sources']
+        self.schedule = data['schedule']
+        self.weaviate = data['weaviate']
+        self.engine = data['engine']
+        self.status = data.get('status', {})
+        self._data = data
+    
+    @property
+    def collection_name(self) -> str:
+        """获取 Weaviate Collection 名称"""
+        return self.weaviate['collection']
+    
+    @property
+    def is_enabled(self) -> bool:
+        """任务是否启用"""
+        return self.status.get('enabled', True)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self._data
+    
+    def __repr__(self):
+        return f"TaskConfig(name={self.name}, scene={self.scene}, sources={len(self.sources)})"
+
+
+class TaskManager:
+    """任务管理器"""
+    
+    def __init__(self, schedules_dir: Optional[str] = None):
+        """
+        初始化任务管理器
+        
+        Args:
+            schedules_dir: 任务配置目录，默认为 config/schedules
+        """
+        if schedules_dir is None:
+            project_root = Path(__file__).parent.parent.parent
+            schedules_dir = project_root / "config" / "schedules"
+        
+        self.schedules_dir = Path(schedules_dir)
+        self.schedules_dir.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"任务管理器已初始化: {self.schedules_dir}")
+    
+    def create_task(
+        self,
+        name: str,
+        scene: str,
+        sources: List[Dict[str, Any]],
+        cron: str = "0 8 * * *",
+        date_range: str = "today",
+        engine_name: str = "tophub"
+    ) -> TaskConfig:
+        """
+        创建新任务
+        
+        Args:
+            name: 任务名称
+            scene: 场景描述
+            sources: 新闻源列表
+            cron: Cron 表达式
+            date_range: 日期范围（today, yesterday, last_7_days, custom）
+            engine_name: 引擎名称
+            
+        Returns:
+            任务配置对象
+            
+        Raises:
+            ValueError: 任务已存在
+        """
+        # 检查任务是否已存在
+        if self.task_exists(name):
+            raise ValueError(f"任务 {name} 已存在")
+        
+        # 生成 Collection 名称
+        collection_name = self._generate_collection_name(name)
+        
+        # 创建任务配置
+        task_data = {
+            'name': name,
+            'scene': scene,
+            'created_at': datetime.now().isoformat(),
+            'locked': True,  # 配置锁定
+            'sources': sources,
+            'schedule': {
+                'cron': cron,
+                'date_range': date_range,
+                'custom_range': {
+                    'start': None,
+                    'end': None
+                }
+            },
+            'weaviate': {
+                'collection': collection_name
+            },
+            'engine': {
+                'name': engine_name
+            },
+            'status': {
+                'enabled': True,
+                'last_run': None,
+                'next_run': None,
+                'total_runs': 0,
+                'last_error': None
+            }
+        }
+        
+        # 保存到文件
+        self._save_task(name, task_data)
+        
+        logger.success(f"任务已创建: {name}")
+        return TaskConfig(task_data)
+    
+    def get_task(self, name: str) -> Optional[TaskConfig]:
+        """
+        获取任务配置
+        
+        Args:
+            name: 任务名称
+            
+        Returns:
+            任务配置对象，不存在返回 None
+        """
+        task_file = self.schedules_dir / f"{name}.yaml"
+        
+        if not task_file.exists():
+            return None
+        
+        with open(task_file, 'r', encoding='utf-8') as f:
+            task_data = yaml.safe_load(f)
+        
+        return TaskConfig(task_data)
+    
+    def list_tasks(self) -> List[TaskConfig]:
+        """
+        列出所有任务
+        
+        Returns:
+            任务配置列表
+        """
+        tasks = []
+        
+        for task_file in self.schedules_dir.glob("*.yaml"):
+            try:
+                with open(task_file, 'r', encoding='utf-8') as f:
+                    task_data = yaml.safe_load(f)
+                tasks.append(TaskConfig(task_data))
+            except Exception as e:
+                logger.error(f"加载任务配置失败 ({task_file}): {str(e)}")
+        
+        return tasks
+    
+    def delete_task(self, name: str) -> bool:
+        """
+        删除任务
+        
+        Args:
+            name: 任务名称
+            
+        Returns:
+            是否成功删除
+        """
+        task_file = self.schedules_dir / f"{name}.yaml"
+        
+        if not task_file.exists():
+            logger.warning(f"任务不存在: {name}")
+            return False
+        
+        task_file.unlink()
+        logger.success(f"任务已删除: {name}")
+        return True
+    
+    def update_task_status(
+        self,
+        name: str,
+        last_run: Optional[datetime] = None,
+        next_run: Optional[datetime] = None,
+        error: Optional[str] = None
+    ) -> bool:
+        """
+        更新任务状态
+        
+        Args:
+            name: 任务名称
+            last_run: 最后运行时间
+            next_run: 下次运行时间
+            error: 错误信息
+            
+        Returns:
+            是否成功更新
+        """
+        task = self.get_task(name)
+        
+        if not task:
+            logger.warning(f"任务不存在: {name}")
+            return False
+        
+        # 更新状态
+        if last_run:
+            task.status['last_run'] = last_run.isoformat()
+            task.status['total_runs'] = task.status.get('total_runs', 0) + 1
+        
+        if next_run:
+            task.status['next_run'] = next_run.isoformat()
+        
+        if error:
+            task.status['last_error'] = error
+        
+        # 保存
+        self._save_task(name, task.to_dict())
+        logger.info(f"任务状态已更新: {name}")
+        return True
+    
+    def enable_task(self, name: str) -> bool:
+        """启用任务"""
+        return self._set_task_enabled(name, True)
+    
+    def disable_task(self, name: str) -> bool:
+        """禁用任务"""
+        return self._set_task_enabled(name, False)
+    
+    def _set_task_enabled(self, name: str, enabled: bool) -> bool:
+        """设置任务启用状态"""
+        task = self.get_task(name)
+        
+        if not task:
+            return False
+        
+        task.status['enabled'] = enabled
+        self._save_task(name, task.to_dict())
+        
+        status_text = "启用" if enabled else "禁用"
+        logger.info(f"任务已{status_text}: {name}")
+        return True
+    
+    def task_exists(self, name: str) -> bool:
+        """检查任务是否存在"""
+        task_file = self.schedules_dir / f"{name}.yaml"
+        return task_file.exists()
+    
+    def _save_task(self, name: str, task_data: Dict[str, Any]):
+        """保存任务配置到文件"""
+        task_file = self.schedules_dir / f"{name}.yaml"
+        
+        with open(task_file, 'w', encoding='utf-8') as f:
+            yaml.dump(task_data, f, allow_unicode=True, default_flow_style=False)
+    
+    def _generate_collection_name(self, task_name: str) -> str:
+        """
+        生成 Weaviate Collection 名称
+        
+        Args:
+            task_name: 任务名称
+            
+        Returns:
+            Collection 名称（首字母大写）
+        """
+        # 移除特殊字符，转换为小写，然后首字母大写
+        clean_name = task_name.replace('-', '_').replace(' ', '_').lower()
+        return f"{clean_name.capitalize()}_db"
