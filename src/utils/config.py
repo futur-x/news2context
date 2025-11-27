@@ -21,12 +21,15 @@ class ConfigManager:
         Args:
             config_path: 配置文件路径，默认为 config/config.yaml
         """
-        # 加载环境变量
-        load_dotenv()
+        # 确定项目根目录
+        project_root = Path(__file__).parent.parent.parent
+        
+        # 加载环境变量 (优先加载 config/.env)
+        env_path = project_root / "config" / ".env"
+        load_dotenv(dotenv_path=env_path)
         
         # 确定配置文件路径
         if config_path is None:
-            project_root = Path(__file__).parent.parent.parent
             config_path = project_root / "config" / "config.yaml"
         
         self.config_path = Path(config_path)

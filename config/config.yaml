@@ -4,8 +4,8 @@
 llm:
   provider: openai              # openai, anthropic, azure, local
   api_key: ""                   # 从环境变量读取: OPENAI_API_KEY
-  base_url: https://api.openai.com/v1
-  model: gpt-4
+  base_url: https://litellm.futurx.cc
+  model: aws-claude-haiku-4.5   # Claude Haiku 4.5
   temperature: 0.7
   max_tokens: 2000
 
@@ -14,6 +14,11 @@ news_sources:
   # 当前激活的引擎
   active_engine: tophub
   
+  # 采集器配置
+  collector:
+    max_news_per_source: 15  # 每个源最多采集的新闻数量
+    early_stop_threshold: 3  # 连续失败多少次后跳过该源
+
   # 各引擎配置
   engines:
     # TopHub 引擎
@@ -43,6 +48,26 @@ news_sources:
 weaviate:
   url: http://localhost:8080
   api_key: ""                   # 可选
+  
+  # Chunk 切割配置
+  chunking:
+    enabled: true               # 启用智能切割
+    max_chunk_size: 3000        # 每个 chunk 最大字符数
+    split_by_heading: true      # 按标题边界切割
+    heading_level: 4            # 切割的标题级别（#### = 4）
+    
+  # 批量插入配置
+  batch:
+    size: 5                     # 每批 5 个（降低并发压力）
+    dynamic: true               # 动态调整
+    timeout_retries: 3          # 重试次数
+    
+  # 搜索配置
+  search:
+    type: hybrid                # hybrid, semantic, keyword
+    hybrid_alpha: 0.5           # 0.5 = 50% 语义 + 50% 关键词（平衡）
+    similarity_threshold: 0.3   # 降低阈值，返回更多结果
+    max_results: 5              # 返回 TOP 5 结果
   
 # ==================== API 服务配置 ====================
 api:

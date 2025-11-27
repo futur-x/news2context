@@ -17,9 +17,16 @@ import re
 class ContentExtractor:
     """网页内容提取器 - 多策略版本"""
     
-    def __init__(self):
-        self.timeout = 60  # 增加超时时间
-        self.max_retries = 2
+    def __init__(self, timeout: int = 15, max_retries: int = 2):
+        """
+        初始化提取器
+        
+        Args:
+            timeout: 请求超时时间（秒），默认15秒
+            max_retries: 最大重试次数
+        """
+        self.timeout = timeout
+        self.max_retries = max_retries
         
         # 配置 trafilatura
         self.config = use_config()
@@ -69,7 +76,30 @@ class ContentExtractor:
                         logger.warning(f"Failed to fetch {url}: HTTP {response.status}")
                         continue
                     
-                    html = await response.text()
+                    # 读取原始字节
+                    raw_content = await response.read()
+                    
+                    # 尝试自动检测编码
+                    html = None
+                    try:
+                        # 首先尝试 UTF-8
+                        html = raw_content.decode('utf-8')
+                    except UnicodeDecodeError:
+                        # UTF-8 失败，尝试检测编码
+                        try:
+                            import chardet
+                            detected = chardet.detect(raw_content)
+                            encoding = detected.get('encoding', 'gbk')
+                            logger.info(f"Detected encoding {encoding} for {url}")
+                            html = raw_content.decode(encoding, errors='ignore')
+                        except Exception as e:
+                            # 最后尝试 GBK
+                            logger.warning(f"Encoding detection failed, trying GBK: {str(e)}")
+                            html = raw_content.decode('gbk', errors='ignore')
+                    
+                    if not html:
+                        logger.warning(f"Failed to decode content from {url}")
+                        continue
                     
                     # 策略1: 检查是否有网站特定提取器
                     if 'yicai.com' in domain:

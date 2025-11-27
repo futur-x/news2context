@@ -5,6 +5,8 @@ TopHub 新闻源引擎实现
 import aiohttp
 from typing import List, Dict, Any, Optional
 from datetime import date
+import time
+from pathlib import Path
 from loguru import logger
 
 from .base import NewsSourceEngine
@@ -47,11 +49,17 @@ class TopHubEngine(NewsSourceEngine):
     
     async def get_all_sources(self) -> List[Dict[str, Any]]:
         """
-        获取所有 TopHub 榜单列表
+        获取所有 TopHub 榜单列表 (带缓存)
         
         Returns:
             榜单列表
         """
+        # 尝试从缓存加载
+        cached_sources = self._load_from_cache()
+        if cached_sources:
+            logger.info(f"从缓存加载了 {len(cached_sources)} 个 TopHub 榜单")
+            return cached_sources
+
         all_sources = []
         page = 1
         
@@ -109,26 +117,65 @@ class TopHubEngine(NewsSourceEngine):
                     logger.error(f"获取榜单列表异常: {str(e)}")
                     break
         
-        logger.info(f"获取到 {len(all_sources)} 个 TopHub 榜单")
+        if all_sources:
+            logger.info(f"获取到 {len(all_sources)} 个 TopHub 榜单")
+            self._save_to_cache(all_sources)
+            
         return all_sources
+
+    def _get_cache_path(self) -> Path:
+        """获取缓存文件路径"""
+        project_root = Path(__file__).parent.parent.parent
+        cache_dir = project_root / "data" / "cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        return cache_dir / "tophub_sources.json"
+
+    def _load_from_cache(self) -> Optional[List[Dict[str, Any]]]:
+        """从缓存加载数据"""
+        try:
+            cache_path = self._get_cache_path()
+            if not cache_path.exists():
+                return None
+            
+            # 检查是否过期 (7天)
+            mtime = cache_path.stat().st_mtime
+            if time.time() - mtime > 7 * 24 * 3600:
+                logger.info("缓存已过期，将重新获取")
+                return None
+            
+            import json
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data
+        except Exception as e:
+            logger.warning(f"读取缓存失败: {str(e)}")
+            return None
+
+    def _save_to_cache(self, sources: List[Dict[str, Any]]):
+        """保存数据到缓存"""
+        try:
+            cache_path = self._get_cache_path()
+            import json
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                json.dump(sources, f, ensure_ascii=False, indent=2)
+            logger.info(f"已缓存源列表到: {cache_path}")
+        except Exception as e:
+            logger.warning(f"保存缓存失败: {str(e)}")
     
-    async def fetch_news(
-        self, 
-        source_id: str, 
-        target_date: date
-    ) -> List[Dict[str, Any]]:
+    
+    async def fetch_news(self, source_id: str, target_date: date = None) -> List[Dict[str, Any]]:
         """
-        获取指定榜单在指定日期的新闻
+        获取指定新闻源的最新新闻列表
         
         Args:
-            source_id: 榜单 hashid
-            target_date: 目标日期
+            source_id: 新闻源ID (hashid)
+            target_date: 目标日期（已废弃，保留参数用于兼容性）
             
         Returns:
             新闻列表
         """
-        url = f"{self.base_url}/nodes/{source_id}/historys"
-        params = {'date': target_date.strftime('%Y-%m-%d')}
+        # 使用最新详细接口，不需要日期参数
+        url = f"{self.base_url}/nodes/{source_id}"
         headers = {'Authorization': self.api_key}
         
         news_list = []
@@ -138,7 +185,6 @@ class TopHubEngine(NewsSourceEngine):
                 try:
                     async with session.get(
                         url,
-                        params=params,
                         headers=headers,
                         timeout=self.timeout
                     ) as response:
@@ -155,7 +201,13 @@ class TopHubEngine(NewsSourceEngine):
                             logger.error(f"API 返回错误: {data}")
                             break
                         
-                        items = data.get('data', [])
+                        # 从 data 对象中获取 items
+                        node_data = data.get('data', {})
+                        items = node_data.get('items', [])
+                        
+                        if not items:
+                            logger.warning(f"源 {source_id} 没有最新数据")
+                            break
                         
                         # 转换为统一格式
                         for item in items:
@@ -164,27 +216,23 @@ class TopHubEngine(NewsSourceEngine):
                                 'url': item.get('url', ''),
                                 'content': None,  # TopHub 不提供正文，需要后续提取
                                 'excerpt': item.get('description', ''),
-                                'published_at': item.get('time'),  # Unix 时间戳
+                                'published_at': None,  # 最新接口不提供时间戳
                                 'source_name': '',  # 需要从 source 信息补充
                                 'source_id': source_id,
                                 'extra': item.get('extra', '')  # 热度等额外信息
                             }
                             news_list.append(news)
                         
-                        logger.success(
-                            f"成功获取 {len(news_list)} 条新闻 "
-                            f"({source_id}, {target_date})"
-                        )
+                        logger.success(f"成功获取 {len(news_list)} 条最新新闻 ({source_id})")
                         break
                 
                 except Exception as e:
-                    logger.error(
-                        f"获取新闻异常 ({source_id}): {str(e)}, "
+                    logger.warning(
+                        f"获取新闻失败 ({source_id}): {str(e)}, "
                         f"尝试 {attempt + 1}/{self.max_retries}"
                     )
-                    
                     if attempt < self.max_retries - 1:
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(self.retry_delay)
         
         return news_list
     
