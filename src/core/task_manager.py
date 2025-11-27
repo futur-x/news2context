@@ -191,6 +191,46 @@ class TaskManager:
         logger.success(f"任务已删除: {name}")
         return True
     
+    def update_task(self, name: str, updates: Dict[str, Any]) -> TaskConfig:
+        """
+        更新任务配置
+        
+        Args:
+            name: 任务名称
+            updates: 更新内容字典
+            
+        Returns:
+            更新后的任务配置对象
+            
+        Raises:
+            ValueError: 任务不存在
+        """
+        task = self.get_task(name)
+        if not task:
+            raise ValueError(f"任务 {name} 不存在")
+            
+        task_data = task.to_dict()
+        
+        # 更新支持的字段
+        if 'scene' in updates:
+            task_data['scene'] = updates['scene']
+        if 'sources' in updates:
+            task_data['sources'] = updates['sources']
+        if 'schedule' in updates:
+            # 深度合并 schedule
+            if 'cron' in updates['schedule']:
+                task_data['schedule']['cron'] = updates['schedule']['cron']
+            if 'date_range' in updates['schedule']:
+                task_data['schedule']['date_range'] = updates['schedule']['date_range']
+        if 'status' in updates and 'enabled' in updates['status']:
+             task_data['status']['enabled'] = updates['status']['enabled']
+             
+        # 保存更新
+        self._save_task(name, task_data)
+        logger.info(f"任务已更新: {name}")
+        
+        return TaskConfig(task_data)
+
     def update_task_status(
         self,
         name: str,

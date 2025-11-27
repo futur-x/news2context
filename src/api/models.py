@@ -50,6 +50,22 @@ class TaskListResponse(BaseResponse):
     tasks: List[TaskDetail]
     total: int
 
+class CreateTaskRequest(BaseModel):
+    """创建任务请求"""
+    name: str = Field(..., description="任务名称 (英文)")
+    scene: str = Field(..., description="场景描述")
+    sources: List[TaskSource] = Field(..., description="新闻源列表")
+    cron: str = Field("0 8 * * *", description="Cron 表达式")
+    date_range: str = Field("today", description="日期范围")
+    engine_name: str = Field("tophub", description="引擎名称")
+
+class UpdateTaskRequest(BaseModel):
+    """更新任务请求"""
+    scene: Optional[str] = None
+    sources: Optional[List[TaskSource]] = None
+    schedule: Optional[Dict[str, Any]] = None
+    status: Optional[Dict[str, bool]] = None
+
 # --- 查询相关模型 ---
 
 class SearchRequest(BaseModel):
