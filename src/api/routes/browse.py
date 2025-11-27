@@ -52,21 +52,48 @@ async def browse_knowledge_base(
     
     try:
         # 查询所有内容
+        # 尝试查询 NewsChunk 字段
+        properties = [
+            "content", 
+            "article_titles", "sources", "article_urls", "created_at",  # Chunk schema
+            "title", "source_name", "url", "published_at"  # Article schema (fallback)
+        ]
+        
         response = collection_manager.client.query.get(
             task.collection_name,
-            ["title", "content", "source_name", "url", "published_at"]
+            properties
         ).with_limit(limit).with_offset(offset).do()
         
         items = []
         if 'data' in response and 'Get' in response['data']:
             collection_data = response['data']['Get'].get(task.collection_name, [])
             for item in collection_data:
+                # 处理 Chunk Schema
+                if 'article_titles' in item:
+                    titles = item.get('article_titles', [])
+                    sources = item.get('sources', [])
+                    urls = item.get('article_urls', [])
+                    
+                    title = titles[0] if titles else "无标题"
+                    if len(titles) > 1:
+                        title = f"{title} 等 {len(titles)} 篇文章"
+                        
+                    source_name = ", ".join(sources[:3]) if sources else "未知来源"
+                    url = urls[0] if urls else None
+                    published_at = item.get('created_at')
+                else:
+                    # 处理 Article Schema
+                    title = item.get('title', '无标题')
+                    source_name = item.get('source_name', '未知来源')
+                    url = item.get('url')
+                    published_at = item.get('published_at')
+
                 items.append(KnowledgeItem(
-                    title=item.get('title', ''),
+                    title=title,
                     content=item.get('content', ''),
-                    source_name=item.get('source_name', ''),
-                    url=item.get('url'),
-                    published_at=item.get('published_at')
+                    source_name=source_name,
+                    url=url,
+                    published_at=published_at
                 ))
         
         return BrowseResponse(

@@ -46,13 +46,33 @@ async def search_news(request: SearchRequest):
             
             # 转换结果
             for item in results:
+                # 处理 Chunk Schema 或 Article Schema
+                if 'article_titles' in item: # 假设这是 Chunk Schema 的特征
+                    titles = item.get('article_titles', [])
+                    srcs = item.get('sources', [])
+                    urls = item.get('article_urls', [])
+                    
+                    title = titles[0] if titles else "无标题"
+                    if len(titles) > 1:
+                        title = f"{title} 等 {len(titles)} 篇文章"
+                    source_name = ", ".join(srcs[:2]) if srcs else "未知来源"
+                    url = urls[0] if urls else None
+                    published_at = item.get('created_at')
+                    content = item.get('content') # Chunk Schema 的内容
+                else: # 假设这是 Article Schema
+                    title = item.get('title', '无标题')
+                    source_name = item.get('source_name', '未知来源')
+                    url = item.get('url')
+                    published_at = item.get('published_at')
+                    content = item.get('content') # Article Schema 的内容
+
                 news_item = NewsItem(
                     id=item.get('_additional', {}).get('id'),
-                    title=item.get('title'),
-                    content=item.get('content'),
-                    url=item.get('url'),
-                    source_name=item.get('source_name'),
-                    published_at=item.get('published_at'),
+                    title=title,
+                    content=content,
+                    url=url,
+                    source_name=source_name,
+                    published_at=published_at,
                     score=item.get('_additional', {}).get('certainty'),
                     task_name=item.get('task_name')
                 )

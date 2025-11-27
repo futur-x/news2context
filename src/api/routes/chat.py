@@ -67,8 +67,20 @@ async def chat_with_knowledge_base(request: ChatRequest):
         sources = []
         for idx, item in enumerate(results, 1):
             content = item.get("content", "")
-            title = item.get("title", "")
-            source = item.get("source_name", "")
+            
+            # 处理 Chunk Schema
+            if 'article_titles' in item:
+                titles = item.get('article_titles', [])
+                srcs = item.get('sources', [])
+                
+                title = titles[0] if titles else "无标题"
+                if len(titles) > 1:
+                    title = f"{title} 等 {len(titles)} 篇文章"
+                source = ", ".join(srcs[:2]) if srcs else "未知来源"
+            else:
+                # 处理 Article Schema
+                title = item.get("title", "无标题")
+                source = item.get("source_name", "未知来源")
             
             context_parts.append(f"[文档 {idx}]\n标题: {title}\n来源: {source}\n内容: {content}\n")
             sources.append({
