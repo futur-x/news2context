@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { taskAPI, externalAPI } from '../api/client'
+import { taskAPI, externalAPI, chatAPI } from '../api/client'
 import './TaskDetail.css'
+import './TaskDetailExtras.css'
 
 interface Task {
     name: string
@@ -16,6 +17,16 @@ function TaskDetail() {
     const [task, setTask] = useState<Task | null>(null)
     const [apiToken, setApiToken] = useState<string>('')
     const [loading, setLoading] = useState(true)
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('')
+    const [searchResults, setSearchResults] = useState<any[]>([])
+    const [searching, setSearching] = useState(false)
+
+    // Chat state
+    const [chatMessage, setChatMessage] = useState('')
+    const [chatHistory, setChatHistory] = useState<any[]>([])
+    const [chatting, setChatting] = useState(false)
 
     useEffect(() => {
         if (taskName) {
@@ -43,6 +54,71 @@ function TaskDetail() {
         }
     }
 
+    const handleDeleteTask = async () => {
+        if (!confirm(`确定要删除任务 "${taskName}" 吗？此操作不可撤销。`)) {
+            return
+        }
+
+        try {
+            await taskAPI.delete(taskName!)
+            alert('任务已删除')
+            window.location.href = '/'
+        } catch (error) {
+            console.error('Failed to delete task:', error)
+            alert('删除失败')
+        }
+    }
+
+    const handleSearch = async () => {
+        if (!searchQuery.trim()) return
+
+        setSearching(true)
+        try {
+            const response = await externalAPI.query(taskName!, {
+                query: searchQuery,
+                limit: 5
+            })
+            setSearchResults(response.data.results || [])
+        } catch (error) {
+            console.error('Search failed:', error)
+            alert('搜索失败')
+        } finally {
+            setSearching(false)
+        }
+    }
+
+    const handleChat = async () => {
+        if (!chatMessage.trim()) return
+
+        const userMessage = { role: 'user', content: chatMessage }
+        setChatHistory([...chatHistory, userMessage])
+        setChatMessage('')
+        setChatting(true)
+
+        try {
+            const response = await chatAPI.sendMessage({
+                task_name: taskName,
+                message: chatMessage,
+                history: chatHistory
+            })
+
+            const assistantMessage = {
+                role: 'assistant',
+                content: response.data.message,
+                sources: response.data.sources
+            }
+            setChatHistory([...chatHistory, userMessage, assistantMessage])
+        } catch (error) {
+            console.error('Chat failed:', error)
+            setChatHistory([...chatHistory, userMessage, {
+                role: 'assistant',
+                content: '抱歉，发生了错误。请稍后再试。'
+            }])
+        } finally {
+            setChatting(false)
+        }
+    }
+
     if (loading) {
         return <div className="loading">Loading...</div>
     }
@@ -60,9 +136,14 @@ function TaskDetail() {
                     <h1 className="page-title">{task.name}</h1>
                     <p className="page-subtitle">{task.scene}</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => taskAPI.run(taskName!)}>
-                    ▶ Run Now
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                    <button className="btn btn-primary" onClick={() => taskAPI.run(taskName!)}>
+                        ▶ Run Now
+                    </button>
+                    <button className="btn btn-secondary" style={{ color: 'var(--color-accent-error)' }} onClick={handleDeleteTask}>
+                        🗑️ Delete
+                    </button>
+                </div>
             </div>
 
             <div className="detail-grid">
@@ -115,6 +196,107 @@ function TaskDetail() {
   -H "Content-Type: application/json" \\
   -d '{"query": "AI news", "limit": 5}'`}
                             </code>
+                        </div>
+                    </div>
+
+                    <div className="detail-section">
+                        <h2 className="section-title">🔍 Search Test</h2>
+                        <div className="search-panel">
+                            <div className="search-input-group">
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="输入关键词测试搜索..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                />
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleSearch}
+                                    disabled={searching}
+                                >
+                                    {searching ? '搜索中...' : '搜索'}
+                                </button>
+                            </div>
+
+                            {searchResults.length > 0 && (
+                                <div className="search-results">
+                                    <h3>搜索结果 ({searchResults.length})</h3>
+                                    {searchResults.map((result, idx) => (
+                                        <div key={idx} className="search-result-item">
+                                            <div className="result-score">
+                                                Score: {(result.score * 100).toFixed(1)}%
+                                            </div>
+                                            <div className="result-content">
+                                                {result.content?.substring(0, 200)}...
+                                            </div>
+                                            {result.titles && result.titles.length > 0 && (
+                                                <div className="result-titles">
+                                                    📰 {result.titles.join(', ')}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="detail-section">
+                        <h2 className="section-title">💬 Knowledge Base Chat</h2>
+                        <div className="chat-panel">
+                            <div className="chat-messages">
+                                {chatHistory.length === 0 ? (
+                                    <div className="chat-empty">
+                                        开始对话，向知识库提问...
+                                    </div>
+                                ) : (
+                                    chatHistory.map((msg, idx) => (
+                                        <div key={idx} className={`chat-message ${msg.role}`}>
+                                            <div className="message-role">
+                                                {msg.role === 'user' ? '👤 You' : '🤖 Assistant'}
+                                            </div>
+                                            <div className="message-content">{msg.content}</div>
+                                            {msg.sources && msg.sources.length > 0 && (
+                                                <div className="message-sources">
+                                                    <strong>参考来源:</strong>
+                                                    {msg.sources.map((src: any, i: number) => (
+                                                        <div key={i} className="source-item">
+                                                            • {src.content}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                                {chatting && (
+                                    <div className="chat-message assistant">
+                                        <div className="message-role">🤖 Assistant</div>
+                                        <div className="message-content">思考中...</div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="chat-input-group">
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder="输入您的问题..."
+                                    value={chatMessage}
+                                    onChange={(e) => setChatMessage(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleChat()}
+                                    disabled={chatting}
+                                />
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleChat}
+                                    disabled={chatting || !chatMessage.trim()}
+                                >
+                                    发送
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

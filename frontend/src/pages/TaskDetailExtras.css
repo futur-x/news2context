@@ -1,0 +1,119 @@
+/* Additional styles for search and chat */
+
+.search-panel,
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.search-input-group,
+.chat-input-group {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.search-input-group .input,
+.chat-input-group .input {
+    flex: 1;
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.search-results h3 {
+    font-size: var(--text-lg);
+    color: var(--color-text-secondary);
+}
+
+.search-result-item {
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+}
+
+.result-score {
+    font-size: var(--text-sm);
+    color: var(--color-accent-success);
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.result-content {
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--space-sm);
+}
+
+.result-titles {
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+    font-style: italic;
+}
+
+.chat-messages {
+    max-height: 500px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.chat-empty {
+    text-align: center;
+    padding: var(--space-2xl);
+    color: var(--color-text-tertiary);
+}
+
+.chat-message {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+}
+
+.chat-message.user {
+    background: var(--color-bg-elevated);
+    align-self: flex-end;
+    max-width: 80%;
+}
+
+.chat-message.assistant {
+    background: var(--color-bg-tertiary);
+    align-self: flex-start;
+    max-width: 80%;
+}
+
+.message-role {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.message-content {
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.message-sources {
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--text-sm);
+}
+
+.source-item {
+    color: var(--color-text-tertiary);
+    margin-top: var(--space-xs);
+    font-size: var(--text-xs);
+}

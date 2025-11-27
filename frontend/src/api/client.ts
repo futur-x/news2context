@@ -28,7 +28,13 @@ export const settingsAPI = {
 // External API
 export const externalAPI = {
     generateToken: () => api.post('/external/tokens'),
-    listTokens: () => api.get('/external/tokens')
+    listTokens: () => api.get('/external/tokens'),
+    query: (taskName: string, data: any) => api.post(`/external/${taskName}/query`, data)
+}
+
+// Chat API
+export const chatAPI = {
+    sendMessage: (data: any) => api.post('/chat', data)
 }
 
 export default api
