@@ -82,7 +82,7 @@ class NewsItem(BaseModel):
     id: Optional[str] = None
     title: str
     content: Optional[str] = None
-    url: str
+    url: Optional[str] = None
     source_name: str
     published_at: Optional[str] = None
     score: Optional[float] = None  # 相似度分数
