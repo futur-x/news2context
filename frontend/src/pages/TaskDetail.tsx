@@ -229,15 +229,22 @@ function TaskDetail() {
                                     {searchResults.map((result, idx) => (
                                         <div key={idx} className="search-result-item">
                                             <div className="result-score">
-                                                Score: {(result.score * 100).toFixed(1)}%
+                                                Score: {result.score ? (result.score * 100).toFixed(1) : 'N/A'}%
                                             </div>
+                                            <h4 className="result-title">{result.title}</h4>
                                             <div className="result-content">
-                                                {result.content?.substring(0, 200)}...
+                                                {result.content?.substring(0, 300)}...
                                             </div>
-                                            {result.titles && result.titles.length > 0 && (
-                                                <div className="result-titles">
-                                                    📰 {result.titles.join(', ')}
-                                                </div>
+                                            <div className="result-meta">
+                                                <span>📰 {result.source_name}</span>
+                                                {result.published_at && (
+                                                    <span>📅 {new Date(result.published_at).toLocaleDateString()}</span>
+                                                )}
+                                            </div>
+                                            {result.url && (
+                                                <a href={result.url} target="_blank" rel="noopener noreferrer" className="result-link">
+                                                    查看原文 →
+                                                </a>
                                             )}
                                         </div>
                                     ))}
