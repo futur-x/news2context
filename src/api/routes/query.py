@@ -35,13 +35,23 @@ async def search_news(request: SearchRequest):
         tasks = task_manager.list_tasks()
         collections_to_search = [t.weaviate['collection'] for t in tasks]
     
+    # 确定搜索参数
+    alpha = 0.5
+    if request.search_mode == 'semantic':
+        alpha = 1.0
+    elif request.search_mode == 'keyword':
+        alpha = 0.0
+        
     # 执行搜索
     for collection_name in collections_to_search:
         try:
-            results = collection_manager.search_news(
+            # 使用混合搜索以支持 NewsChunk schema 和搜索模式
+            results = collection_manager.hybrid_search(
                 collection_name=collection_name,
                 query=request.query,
-                limit=request.limit
+                limit=request.limit,
+                alpha=alpha,
+                similarity_threshold=0.0  # 尽可能返回结果
             )
             
             # 转换结果

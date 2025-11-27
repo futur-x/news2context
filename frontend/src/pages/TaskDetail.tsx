@@ -98,7 +98,8 @@ function TaskDetail() {
             const response = await api.post('/query', {
                 query: searchQuery,
                 task_name: taskName,
-                limit: 5
+                limit: 5,
+                search_mode: searchMode
             })
             setSearchResults(response.data.results || [])
         } catch (error) {

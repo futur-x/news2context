@@ -75,6 +75,7 @@ class SearchRequest(BaseModel):
     limit: int = Field(10, ge=1, le=50, description="返回数量限制")
     date_from: Optional[str] = Field(None, description="开始日期 (YYYY-MM-DD)")
     date_to: Optional[str] = Field(None, description="结束日期 (YYYY-MM-DD)")
+    search_mode: str = Field("hybrid", description="搜索模式: hybrid, semantic, keyword")
 
 class NewsItem(BaseModel):
     """新闻条目模型"""
