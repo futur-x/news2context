@@ -52,7 +52,13 @@ class NewsCollector:
         collection_name = task.weaviate['collection']
         if not self.collection_manager.collection_exists(collection_name):
             logger.info(f"创建 Collection: {collection_name}")
-            self.collection_manager.create_collection(collection_name)
+            # 根据配置决定使用哪种 Schema
+            if self.config.get('weaviate.chunking.enabled', True):
+                schema = self.collection_manager.NEWS_CHUNK_SCHEMA
+            else:
+                schema = self.collection_manager.NEWS_ARTICLE_SCHEMA
+                
+            self.collection_manager.create_collection(collection_name, schema)
             
         # 从配置读取参数
         max_news_per_source = self.config.get('collector.max_news_per_source', 15)
@@ -149,6 +155,10 @@ class NewsCollector:
                 except Exception as e:
                     logger.error(f"处理源 {source_name} 失败: {str(e)}")
         
+
+        # 3. 获取新闻源
+        logger.info(f"正在获取任务 {task_name} 的新闻源...")
+        
         # 5. 生成 Markdown 摘要文件
         logger.info("正在生成 Markdown 摘要文件...")
         markdown_path = self._generate_markdown_digest(task_name, all_news_items, source_stats)
@@ -161,6 +171,24 @@ class NewsCollector:
             # 解析 Markdown，提取文章
             parser = MarkdownParser()
             articles = parser.parse_digest(markdown_path)
+            
+            # === 数据去重逻辑 ===
+            logger.info("正在检查重复数据...")
+            existing_urls = self.collection_manager.get_existing_urls(collection_name, task_name)
+            
+            if existing_urls:
+                original_count = len(articles)
+                # 过滤掉已存在的文章
+                articles = [a for a in articles if a.url not in existing_urls]
+                filtered_count = len(articles)
+                
+                if original_count != filtered_count:
+                    logger.info(f"去重过滤: {original_count} -> {filtered_count} 篇 (过滤了 {original_count - filtered_count} 篇重复文章)")
+                
+                if not articles:
+                    logger.warning("所有文章均已存在，无需入库")
+                    return 0
+            # ===================
             
             # 智能切割成 chunks
             max_chunk_size = self.config.get('weaviate.chunking.max_chunk_size', 3000)
@@ -179,6 +207,7 @@ class NewsCollector:
                     "categories": chunk.metadata["categories"],
                     "sources": chunk.metadata["sources"],
                     "article_titles": chunk.metadata["article_titles"],
+                    "article_urls": chunk.metadata.get("article_urls", []),  # 新增字段
                     "article_count": chunk.metadata["article_count"],
                     "char_count": chunk.metadata["char_count"],
                     "created_at": datetime.now().isoformat() + "Z"

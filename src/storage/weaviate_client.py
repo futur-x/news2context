@@ -4,7 +4,7 @@ Weaviate Collection 管理器
 """
 
 import weaviate
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set
 from loguru import logger
 
 
@@ -166,6 +166,16 @@ class CollectionManager:
                 }
             },
             {
+                "name": "article_urls",
+                "dataType": ["string[]"],
+                "description": "包含的文章链接",
+                "moduleConfig": {
+                    "text2vec-openai": {
+                        "skip": True
+                    }
+                }
+            },
+            {
                 "name": "created_at",
                 "dataType": ["date"],
                 "description": "创建时间"
@@ -220,12 +230,13 @@ class CollectionManager:
             
         return clean_name[0].upper() + clean_name[1:]
 
-    def create_collection(self, collection_name: str) -> bool:
+    def create_collection(self, collection_name: str, schema: Dict[str, Any] = None) -> bool:
         """
         创建 Collection
         
         Args:
             collection_name: Collection 名称
+            schema: Schema 定义 (默认使用 NEWS_ARTICLE_SCHEMA)
             
         Returns:
             是否成功创建
@@ -234,11 +245,15 @@ class CollectionManager:
         
         # 检查是否已存在
         if self.collection_exists(collection_name):
-            logger.warning(f"Collection 已存在: {collection_name}")
+            # logger.warning(f"Collection 已存在: {collection_name}")
             return False
         
         # 创建 Schema（使用 Collection 名称）
-        schema = self.NEWS_ARTICLE_SCHEMA.copy()
+        if schema is None:
+            schema = self.NEWS_ARTICLE_SCHEMA.copy()
+        else:
+            schema = schema.copy()
+            
         schema['class'] = collection_name
         
         try:
@@ -598,3 +613,50 @@ class CollectionManager:
             logger.error(f"批量插入失败: {str(e)}")
             logger.error(f"已处理: {success_count}, 失败: {failed_count}")
             return success_count
+
+    def get_existing_urls(self, collection_name: str, task_name: str) -> Set[str]:
+        """
+        获取已存在的文章 URL 集合
+        
+        Args:
+            collection_name: Collection 名称
+            task_name: 任务名称
+            
+        Returns:
+            URL 集合
+        """
+        collection_name = self._format_class_name(collection_name)
+        
+        if not self.collection_exists(collection_name):
+            return set()
+            
+        try:
+            # 查询所有 chunks 的 article_urls
+            # 限制 10000 条，对于目前规模足够
+            result = (
+                self.client.query
+                .get(collection_name, ["article_urls"])
+                .with_where({
+                    "path": ["task_name"],
+                    "operator": "Equal",
+                    "valueString": task_name
+                })
+                .with_limit(10000) 
+                .do()
+            )
+            
+            items = result.get('data', {}).get('Get', {}).get(collection_name, [])
+            
+            existing_urls = set()
+            for item in items:
+                urls = item.get('article_urls', [])
+                if urls:
+                    existing_urls.update(urls)
+                    
+            logger.info(f"从 Weaviate 获取到 {len(existing_urls)} 个已存在 URL")
+            return existing_urls
+            
+        except Exception as e:
+            # 如果属性不存在（旧 schema），可能会报错，忽略错误返回空集合
+            logger.warning(f"获取已存在 URL 失败 (可能是旧 Schema): {str(e)}")
+            return set()
