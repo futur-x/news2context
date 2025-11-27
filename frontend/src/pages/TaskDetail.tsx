@@ -23,11 +23,16 @@ function TaskDetail() {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<any[]>([])
     const [searching, setSearching] = useState(false)
+    const [searchMode, setSearchMode] = useState('hybrid') // hybrid, semantic, keyword
 
     // Chat state
     const [chatMessage, setChatMessage] = useState('')
     const [chatHistory, setChatHistory] = useState<any[]>([])
     const [chatting, setChatting] = useState(false)
+
+    // Knowledge base content
+    const [kbContent, setKbContent] = useState<any[]>([])
+    const [loadingKb, setLoadingKb] = useState(false)
 
     useEffect(() => {
         if (taskName) {
@@ -39,10 +44,24 @@ function TaskDetail() {
         try {
             const response = await taskAPI.get(taskName!)
             setTask(response.data)
+            // Load knowledge base content
+            loadKbContent()
         } catch (error) {
             console.error('Failed to load task:', error)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const loadKbContent = async () => {
+        setLoadingKb(true)
+        try {
+            const response = await taskAPI.browse(taskName!, 20)
+            setKbContent(response.data.items || [])
+        } catch (error) {
+            console.error('Failed to load KB content:', error)
+        } finally {
+            setLoadingKb(false)
         }
     }
 
@@ -173,6 +192,37 @@ function TaskDetail() {
                 </div>
 
                 <div className="detail-section">
+                    <h2 className="section-title">📚 Knowledge Base Content ({kbContent.length} items)</h2>
+                    {loadingKb ? (
+                        <div className="loading">Loading content...</div>
+                    ) : kbContent.length > 0 ? (
+                        <div className="kb-content-list">
+                            {kbContent.map((item, idx) => (
+                                <div key={idx} className="kb-item">
+                                    <h4 className="kb-item-title">{item.title}</h4>
+                                    <div className="kb-item-content">
+                                        {item.content?.substring(0, 200)}...
+                                    </div>
+                                    <div className="kb-item-meta">
+                                        <span>📰 {item.source_name}</span>
+                                        {item.published_at && (
+                                            <span>📅 {new Date(item.published_at).toLocaleDateString()}</span>
+                                        )}
+                                    </div>
+                                    {item.url && (
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="kb-item-link">
+                                            查看原文 →
+                                        </a>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="empty-state">暂无内容</div>
+                    )}
+                </div>
+
+                <div className="detail-section">
                     <h2 className="section-title">External API</h2>
                     <div className="api-console">
                         <div className="api-endpoint">
@@ -205,6 +255,19 @@ function TaskDetail() {
                     <div className="detail-section">
                         <h2 className="section-title">🔍 Search Test</h2>
                         <div className="search-panel">
+                            <div className="search-mode-selector">
+                                <label>Search Mode:</label>
+                                <select
+                                    value={searchMode}
+                                    onChange={(e) => setSearchMode(e.target.value)}
+                                    className="mode-select"
+                                >
+                                    <option value="hybrid">Hybrid (推荐)</option>
+                                    <option value="semantic">Semantic (语义)</option>
+                                    <option value="keyword">Keyword (关键词)</option>
+                                </select>
+                            </div>
+
                             <div className="search-input-group">
                                 <input
                                     type="text"

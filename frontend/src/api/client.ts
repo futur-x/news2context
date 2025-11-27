@@ -14,7 +14,8 @@ export const taskAPI = {
     create: (data: any) => api.post('/tasks', data),
     update: (name: string, data: any) => api.put(`/tasks/${name}`, data),
     delete: (name: string) => api.delete(`/tasks/${name}`),
-    run: (name: string) => api.post(`/tasks/${name}/run`)
+    run: (name: string) => api.post(`/tasks/${name}/run`),
+    browse: (name: string, limit: number = 20) => api.get(`/tasks/${name}/browse`, { params: { limit } })
 }
 
 // Settings API

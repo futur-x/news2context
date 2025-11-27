@@ -50,12 +50,16 @@ async def chat_with_knowledge_base(request: ChatRequest):
     )
     
     try:
-        # 搜索相关内容
+        # 搜索相关内容 - 使用 hybrid_search 方法
+        search_config = config.get('weaviate.search', {})
+        alpha = search_config.get('hybrid_alpha', 0.75)
+        max_results = search_config.get('max_results', 5)
+        
         results = collection_manager.hybrid_search(
             collection_name=task.collection_name,
             query=request.message,
-            limit=5,
-            alpha=config.get('weaviate.search.hybrid_alpha', 0.5)
+            limit=max_results,
+            alpha=alpha
         )
         
         # 构建上下文
@@ -63,11 +67,15 @@ async def chat_with_knowledge_base(request: ChatRequest):
         sources = []
         for idx, item in enumerate(results, 1):
             content = item.get("content", "")
-            context_parts.append(f"[文档 {idx}]\n{content}\n")
+            title = item.get("title", "")
+            source = item.get("source_name", "")
+            
+            context_parts.append(f"[文档 {idx}]\n标题: {title}\n来源: {source}\n内容: {content}\n")
             sources.append({
                 "content": content[:200] + "..." if len(content) > 200 else content,
                 "score": item.get("_additional", {}).get("score"),
-                "titles": item.get("article_titles", [])
+                "title": title,
+                "source": source
             })
         
         context = "\n".join(context_parts)
@@ -88,7 +96,8 @@ async def chat_with_knowledge_base(request: ChatRequest):
 注意：
 1. 请仅基于提供的新闻内容回答
 2. 如果新闻内容中没有相关信息，请明确告知用户
-3. 回答要简洁、准确、专业"""
+3. 回答要简洁、准确、专业
+4. 可以引用具体的新闻标题和来源"""
 
         messages = [
             SystemMessage(content=system_prompt),

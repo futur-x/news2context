@@ -4,7 +4,7 @@ FastAPI 应用入口
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.routes import health, tasks, query, settings, external, chat
+from src.api.routes import health, tasks, query, settings, external, chat, browse
 
 def create_app() -> FastAPI:
     """创建并配置 FastAPI 应用"""
@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(settings.router, prefix="/api", tags=["Settings"])
     app.include_router(external.router, prefix="/api", tags=["External"])
     app.include_router(chat.router, prefix="/api", tags=["Chat"])
+    app.include_router(browse.router, prefix="/api", tags=["Browse"])
     
     return app
 
