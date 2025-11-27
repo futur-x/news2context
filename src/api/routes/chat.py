@@ -54,12 +54,14 @@ async def chat_with_knowledge_base(request: ChatRequest):
         search_config = config.get('weaviate.search', {})
         alpha = search_config.get('hybrid_alpha', 0.75)
         max_results = search_config.get('max_results', 5)
+        similarity_threshold = search_config.get('similarity_threshold', 0.0) # 默认为 0.0，尽可能返回结果
         
         results = collection_manager.hybrid_search(
             collection_name=task.collection_name,
             query=request.message,
             limit=max_results,
-            alpha=alpha
+            alpha=alpha,
+            similarity_threshold=similarity_threshold
         )
         
         # 构建上下文
