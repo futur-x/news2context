@@ -194,15 +194,19 @@ class CollectionManager:
         self.weaviate_url = weaviate_url
         self.api_key = api_key
         
-        # 创建客户端
+        # 创建客户端（增加启动超时时间）
         if api_key:
             auth_config = weaviate.AuthApiKey(api_key=api_key)
             self.client = weaviate.Client(
                 url=weaviate_url,
-                auth_client_secret=auth_config
+                auth_client_secret=auth_config,
+                startup_period=30  # 增加启动超时到 30 秒
             )
         else:
-            self.client = weaviate.Client(url=weaviate_url)
+            self.client = weaviate.Client(
+                url=weaviate_url,
+                startup_period=30  # 增加启动超时到 30 秒
+            )
         
         # 测试连接
         if not self.client.is_ready():
