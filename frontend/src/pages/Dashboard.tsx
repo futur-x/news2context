@@ -18,6 +18,8 @@ interface Task {
 }
 
 function Dashboard() {
+    const [tasks, setTasks] = useState<Task[]>([])
+    const [loading, setLoading] = useState(true)
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [creating, setCreating] = useState(false)
     const [newTask, setNewTask] = useState({
