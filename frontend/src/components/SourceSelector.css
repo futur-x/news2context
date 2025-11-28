@@ -1,0 +1,107 @@
+.source-selector {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    height: 100%;
+}
+
+.source-filter {
+    position: sticky;
+    top: 0;
+    background: var(--color-bg-primary);
+    z-index: 10;
+    padding-bottom: var(--space-sm);
+}
+
+.filter-input {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+}
+
+.sources-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.source-category {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.category-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-left: var(--space-xs);
+}
+
+.category-sources {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-sm);
+}
+
+.source-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-secondary);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    user-select: none;
+}
+
+.source-item:hover {
+    background: var(--color-bg-hover);
+}
+
+.source-item.selected {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--color-accent-primary);
+    color: var(--color-accent-primary);
+}
+
+.source-name {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.check-icon {
+    font-size: var(--text-sm);
+    font-weight: bold;
+}
+
+.source-selector-loading,
+.source-selector-error,
+.no-results {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--color-text-tertiary);
+    font-size: var(--text-sm);
+}
+
+.source-selector-error {
+    color: var(--color-accent-error);
+}

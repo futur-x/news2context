@@ -1,7 +1,9 @@
+```typescript
 import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { taskAPI, externalAPI, chatAPI } from '../api/client'
 import api from '../api/client'
+import SourceSelector from '../components/SourceSelector'
 import './TaskDetail.css'
 import './TaskDetailExtras.css'
 
@@ -75,17 +77,75 @@ function TaskDetail() {
     }
 
     const handleDeleteTask = async () => {
-        if (!confirm(`确定要删除任务 "${taskName}" 吗？此操作不可撤销。`)) {
+        if (!confirm(`Are you sure you want to delete task "${taskName}" ? This action cannot be undone.`)) {
             return
         }
 
         try {
             await taskAPI.delete(taskName!)
-            alert('任务已删除')
-            window.location.href = '/'
+            navigate('/')
         } catch (error) {
             console.error('Failed to delete task:', error)
-            alert('删除失败')
+            alert('Failed to delete task')
+        }
+    }
+
+    const handleRemoveSource = async (sourceHashId: string) => {
+        if (!task) return
+        if (!confirm('Are you sure you want to remove this source?')) return
+
+        try {
+            const updatedSources = task.sources.filter((s: any) => s.hashid !== sourceHashId)
+            await taskAPI.update(taskName!, {
+                sources: updatedSources
+            })
+            loadTask()
+        } catch (error) {
+            console.error('Failed to remove source:', error)
+            alert('Failed to remove source')
+        }
+    }
+
+    const handleAddSources = async () => {
+        if (!task || selectedNewSources.length === 0) return
+
+        setAddingSources(true)
+        try {
+            // Fetch source details to map hashids
+            const settingsRes = await import('../api/client').then(m => m.settingsAPI.getTopHub())
+            const allSources = settingsRes.data.sources || []
+            const newSourceObjects = allSources
+                .filter((s: any) => selectedNewSources.includes(s.hashid))
+                .map((s: any) => ({
+                    name: s.name,
+                    hashid: s.hashid,
+                    category: s.category
+                }))
+
+            // Merge with existing sources, avoiding duplicates
+            const existingHashIds = task.sources.map((s: any) => s.hashid)
+            const sourcesToAdd = newSourceObjects.filter((s: any) => !existingHashIds.includes(s.hashid))
+            
+            if (sourcesToAdd.length === 0) {
+                alert('Selected sources are already added')
+                setShowAddSourceModal(false)
+                return
+            }
+
+            const updatedSources = [...task.sources, ...sourcesToAdd]
+            
+            await taskAPI.update(taskName!, {
+                sources: updatedSources
+            })
+            
+            setShowAddSourceModal(false)
+            setSelectedNewSources([])
+            loadTask()
+        } catch (error) {
+            console.error('Failed to add sources:', error)
+            alert('Failed to add sources')
+        } finally {
+            setAddingSources(false)
         }
     }
 
@@ -110,8 +170,9 @@ function TaskDetail() {
         }
     }
 
-    const handleChat = async () => {
-        if (!chatMessage.trim()) return
+    const handleSendMessage = async (e: React.FormEvent) => { // Renamed from handleChat to handleSendMessage
+        e.preventDefault() // Added to prevent default form submission
+        if (!chatMessage.trim() || !task) return // Added !task check
 
         const userMessage = { role: 'user', content: chatMessage }
         setChatHistory([...chatHistory, userMessage])
@@ -152,231 +213,271 @@ function TaskDetail() {
 
     const apiUrl = `http://localhost:8000/api/external/${taskName}/query`
 
-    return (
-        <div className="task-detail">
-            <div className="task-detail-header">
-                <div>
-                    <h1 className="page-title">{task.name}</h1>
-                    <p className="page-subtitle">{task.scene}</p>
-                </div>
-                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                    <button className="btn btn-primary" onClick={() => taskAPI.run(taskName!)}>
-                        ▶ Run Now
-                    </button>
-                    <button className="btn btn-secondary" style={{ color: 'var(--color-accent-error)' }} onClick={handleDeleteTask}>
-                        🗑️ Delete
-                    </button>
+return (
+    <div className="task-detail">
+        <div className="task-detail-header">
+            <div>
+                <h1 className="page-title">{task.name}</h1>
+                <p className="page-subtitle">{task.scene}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
+                <button className="btn btn-primary" onClick={() => taskAPI.run(taskName!)}>
+                    ▶ Run Now
+                </button>
+                <button className="btn btn-secondary" style={{ color: 'var(--color-accent-error)' }} onClick={handleDeleteTask}>
+                    🗑️ Delete
+                </button>
+            </div>
+        </div>
+
+        <div className="detail-grid">
+            <div className="detail-section">
+                <h2 className="section-title">Overview</h2>
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <div className="stat-label">Status</div>
+                        <div className="stat-value">
+                            <span className={`badge ${task.status.enabled ? 'badge-success' : 'badge-warning'}`}>
+                                {task.status.enabled ? 'Active' : 'Paused'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Sources</div>
+                        <div className="stat-value">{task.sources.length}</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-label">Total Runs</div>
+                        <div className="stat-value">{task.status.total_runs}</div>
+                    </div>
                 </div>
             </div>
 
-            <div className="detail-grid">
-                <div className="detail-section">
-                    <h2 className="section-title">Overview</h2>
-                    <div className="stats-grid">
-                        <div className="stat-card">
-                            <div className="stat-label">Status</div>
-                            <div className="stat-value">
-                                <span className={`badge ${task.status.enabled ? 'badge-success' : 'badge-warning'}`}>
-                                    {task.status.enabled ? 'Active' : 'Paused'}
-                                </span>
-                            </div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-label">Sources</div>
-                            <div className="stat-value">{task.sources.length}</div>
-                        </div>
-                        <div className="stat-card">
-                            <div className="stat-label">Total Runs</div>
-                            <div className="stat-value">{task.status.total_runs}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="detail-section">
-                    <h2 className="section-title">📚 Knowledge Base Content ({kbContent.length} items)</h2>
-                    {loadingKb ? (
-                        <div className="loading">Loading content...</div>
-                    ) : kbContent.length > 0 ? (
-                        <div className="kb-content-list">
-                            {kbContent.map((item, idx) => (
-                                <div key={idx} className="kb-item">
-                                    <h4 className="kb-item-title">{item.title}</h4>
-                                    <div className="kb-item-content">
-                                        {item.content?.substring(0, 200)}...
-                                    </div>
-                                    <div className="kb-item-meta">
-                                        <span>📰 {item.source_name}</span>
-                                        {item.published_at && (
-                                            <span>📅 {new Date(item.published_at).toLocaleDateString()}</span>
-                                        )}
-                                    </div>
-                                    {item.url && (
-                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="kb-item-link">
-                                            查看原文 →
-                                        </a>
+            <div className="detail-section">
+                <h2 className="section-title">📚 Knowledge Base Content ({kbContent.length} items)</h2>
+                {loadingKb ? (
+                    <div className="loading">Loading content...</div>
+                ) : kbContent.length > 0 ? (
+                    <div className="kb-content-list">
+                        {kbContent.map((item, idx) => (
+                            <div key={idx} className="kb-item">
+                                <h4 className="kb-item-title">{item.title}</h4>
+                                <div className="kb-item-content">
+                                    {item.content?.substring(0, 200)}...
+                                </div>
+                                <div className="kb-item-meta">
+                                    <span>📰 {item.source_name}</span>
+                                    {item.published_at && (
+                                        <span>📅 {new Date(item.published_at).toLocaleDateString()}</span>
                                     )}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="empty-state">暂无内容</div>
-                    )}
-                </div>
-
-                <div className="detail-section">
-                    <h2 className="section-title">External API</h2>
-                    <div className="api-console">
-                        <div className="api-endpoint">
-                            <label>Endpoint URL</label>
-                            <code className="code-block">{apiUrl}</code>
-                        </div>
-
-                        {!apiToken ? (
-                            <button className="btn btn-secondary" onClick={handleGenerateToken}>
-                                Generate API Token
-                            </button>
-                        ) : (
-                            <div className="token-display">
-                                <label>API Token (Save this securely)</label>
-                                <code className="code-block token">{apiToken}</code>
+                                {item.url && (
+                                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="kb-item-link">
+                                        查看原文 →
+                                    </a>
+                                )}
                             </div>
-                        )}
+                        ))}
+                    </div>
+                ) : (
+                    <div className="empty-state">暂无内容</div>
+                )}
+            </div>
 
-                        <div className="curl-example">
-                            <label>Example cURL Command</label>
-                            <code className="code-block">
-                                {`curl -X POST "${apiUrl}" \\
+            <div className="detail-section">
+                <h2 className="section-title">External API</h2>
+                <div className="api-console">
+                    <div className="api-endpoint">
+                        <label>Endpoint URL</label>
+                        <code className="code-block">{apiUrl}</code>
+                    </div>
+
+                    {!apiToken ? (
+                        <button className="btn btn-secondary" onClick={handleGenerateToken}>
+                            Generate API Token
+                        </button>
+                    ) : (
+                        <div className="token-display">
+                            <label>API Token (Save this securely)</label>
+                            <code className="code-block token">{apiToken}</code>
+                        </div>
+                    )}
+
+                    <div className="curl-example">
+                        <label>Example cURL Command</label>
+                        <code className="code-block">
+                            {`curl -X POST "${apiUrl}" \\
   -H "Authorization: Bearer YOUR_TOKEN" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "AI news", "limit": 5}'`}
-                            </code>
-                        </div>
+                        </code>
                     </div>
+                </div>
 
-                    <div className="detail-section">
-                        <h2 className="section-title">🔍 Search Test</h2>
-                        <div className="search-panel">
-                            <div className="search-mode-selector">
-                                <label>Search Mode:</label>
-                                <select
-                                    value={searchMode}
-                                    onChange={(e) => setSearchMode(e.target.value)}
-                                    className="mode-select"
-                                >
-                                    <option value="hybrid">Hybrid (推荐)</option>
-                                    <option value="semantic">Semantic (语义)</option>
-                                    <option value="keyword">Keyword (关键词)</option>
-                                </select>
-                            </div>
+                <div className="detail-section">
+                    <h2 className="section-title">🔍 Search Test</h2>
+                    <div className="search-panel">
+                        <div className="search-mode-selector">
+                            <label>Search Mode:</label>
+                            <select
+                                value={searchMode}
+                                onChange={(e) => setSearchMode(e.target.value)}
+                                className="mode-select"
+                            >
+                                <option value="hybrid">Hybrid (推荐)</option>
+                                <option value="semantic">Semantic (语义)</option>
+                                <option value="keyword">Keyword (关键词)</option>
+                            </select>
+                        </div>
 
-                            <div className="search-input-group">
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="输入关键词测试搜索..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                                />
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={handleSearch}
-                                    disabled={searching}
-                                >
-                                    {searching ? '搜索中...' : '搜索'}
-                                </button>
-                            </div>
+                        <div className="search-input-group">
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="输入关键词测试搜索..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            />
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleSearch}
+                                disabled={searching}
+                            >
+                                {searching ? '搜索中...' : '搜索'}
+                            </button>
+                        </div>
 
-                            {searchResults.length > 0 && (
-                                <div className="search-results">
-                                    <h3>搜索结果 ({searchResults.length})</h3>
-                                    {searchResults.map((result, idx) => (
-                                        <div key={idx} className="search-result-item">
-                                            <div className="result-score">
-                                                Score: {result.score ? (result.score * 100).toFixed(1) : 'N/A'}%
-                                            </div>
-                                            <h4 className="result-title">{result.title}</h4>
-                                            <div className="result-content">
-                                                {result.content?.substring(0, 300)}...
-                                            </div>
-                                            <div className="result-meta">
-                                                <span>📰 {result.source_name}</span>
-                                                {result.published_at && (
-                                                    <span>📅 {new Date(result.published_at).toLocaleDateString()}</span>
-                                                )}
-                                            </div>
-                                            {result.url && (
-                                                <a href={result.url} target="_blank" rel="noopener noreferrer" className="result-link">
-                                                    查看原文 →
-                                                </a>
+                        {searchResults.length > 0 && (
+                            <div className="search-results">
+                                <h3>搜索结果 ({searchResults.length})</h3>
+                                {searchResults.map((result, idx) => (
+                                    <div key={idx} className="search-result-item">
+                                        <div className="result-score">
+                                            Score: {result.score ? (result.score * 100).toFixed(1) : 'N/A'}%
+                                        </div>
+                                        <h4 className="result-title">{result.title}</h4>
+                                        <div className="result-content">
+                                            {result.content?.substring(0, 300)}...
+                                        </div>
+                                        <div className="result-meta">
+                                            <span>📰 {result.source_name}</span>
+                                            {result.published_at && (
+                                                <span>📅 {new Date(result.published_at).toLocaleDateString()}</span>
                                             )}
                                         </div>
-                                    ))}
+                                        {result.url && (
+                                            <a href={result.url} target="_blank" rel="noopener noreferrer" className="result-link">
+                                                查看原文 →
+                                            </a>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="detail-section">
+                    <h2 className="section-title">💬 Knowledge Base Chat</h2>
+                    <div className="chat-panel">
+                        <div className="chat-messages">
+                            {chatHistory.length === 0 ? (
+                                <div className="chat-empty">
+                                    开始对话，向知识库提问...
+                                </div>
+                            ) : (
+                                chatHistory.map((msg, idx) => (
+                                    <div key={idx} className={`chat-message ${msg.role}`}>
+                                        <div className="message-role">
+                                            {msg.role === 'user' ? '👤 You' : '🤖 Assistant'}
+                                        </div>
+                                        <div className="message-content">{msg.content}</div>
+                                        {msg.sources && msg.sources.length > 0 && (
+                                            <div className="message-sources">
+                                                <strong>参考来源:</strong>
+                                                {msg.sources.map((src: any, i: number) => (
+                                                    <div key={i} className="source-item">
+                                                        • {src.content}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                            {chatting && (
+                                <div className="chat-message assistant">
+                                    <div className="message-role">🤖 Assistant</div>
+                                    <div className="message-content">思考中...</div>
                                 </div>
                             )}
                         </div>
-                    </div>
 
-                    <div className="detail-section">
-                        <h2 className="section-title">💬 Knowledge Base Chat</h2>
-                        <div className="chat-panel">
-                            <div className="chat-messages">
-                                {chatHistory.length === 0 ? (
-                                    <div className="chat-empty">
-                                        开始对话，向知识库提问...
-                                    </div>
-                                ) : (
-                                    chatHistory.map((msg, idx) => (
-                                        <div key={idx} className={`chat-message ${msg.role}`}>
-                                            <div className="message-role">
-                                                {msg.role === 'user' ? '👤 You' : '🤖 Assistant'}
-                                            </div>
-                                            <div className="message-content">{msg.content}</div>
-                                            {msg.sources && msg.sources.length > 0 && (
-                                                <div className="message-sources">
-                                                    <strong>参考来源:</strong>
-                                                    {msg.sources.map((src: any, i: number) => (
-                                                        <div key={i} className="source-item">
-                                                            • {src.content}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                                {chatting && (
-                                    <div className="chat-message assistant">
-                                        <div className="message-role">🤖 Assistant</div>
-                                        <div className="message-content">思考中...</div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="chat-input-group">
-                                <input
-                                    type="text"
-                                    className="input"
-                                    placeholder="输入您的问题..."
-                                    value={chatMessage}
-                                    onChange={(e) => setChatMessage(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleChat()}
-                                    disabled={chatting}
-                                />
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={handleChat}
-                                    disabled={chatting || !chatMessage.trim()}
-                                >
-                                    发送
-                                </button>
-                            </div>
+                        <div className="chat-input-group">
+                            <input
+                                type="text"
+                                className="input"
+                                placeholder="输入您的问题..."
+                                value={chatMessage}
+                                onChange={(e) => setChatMessage(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(e)}
+                                disabled={chatting}
+                            />
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleSendMessage}
+                                disabled={chatting || !chatMessage.trim()}
+                            >
+                                发送
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+            {showAddSourceModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>Add News Sources</h2>
+                            <button
+                                className="close-btn"
+                                onClick={() => setShowAddSourceModal(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ padding: 'var(--space-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '400px' }}>
+                            <div className="source-selector-container" style={{ flex: 1 }}>
+                                <SourceSelector
+                                    selectedSources={selectedNewSources}
+                                    onChange={setSelectedNewSources}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => setShowAddSourceModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleAddSources}
+                                disabled={addingSources || selectedNewSources.length === 0}
+                            >
+                                {addingSources ? 'Adding...' : `Add ${selectedNewSources.length} Sources`}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-    )
+    </div>
+)
 }
 
 export default TaskDetail
