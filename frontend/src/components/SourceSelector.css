@@ -5,17 +5,38 @@
     height: 100%;
 }
 
+.source-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
 .source-filter {
     position: sticky;
     top: 0;
     background: var(--color-bg-primary);
     z-index: 10;
     padding-bottom: var(--space-sm);
+    flex: 1;
+}
+
+.ai-recommend-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.ai-recommend-btn:hover {
+    background-color: var(--color-primary-light);
 }
 
 .filter-input {
     width: 100%;
-    padding: var(--space-sm) var(--space-md);
+    padding: 8px 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     background: var(--color-bg-secondary);

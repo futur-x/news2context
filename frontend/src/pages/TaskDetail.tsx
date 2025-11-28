@@ -487,6 +487,7 @@ function TaskDetail() {
                                     <SourceSelector
                                         selectedSources={selectedNewSources}
                                         onChange={setSelectedNewSources}
+                                        scene={task?.scene}
                                     />
                                 </div>
                             </div>

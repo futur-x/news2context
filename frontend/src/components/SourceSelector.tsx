@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { settingsAPI } from '../api/client'
+import { sourcesAPI } from '../api/client'
 import './SourceSelector.css'
 
 interface Source {
@@ -13,13 +13,15 @@ interface SourceSelectorProps {
     selectedSources: string[]
     onChange: (sources: string[]) => void
     className?: string
+    scene?: string
 }
 
-export default function SourceSelector({ selectedSources, onChange, className = '' }: SourceSelectorProps) {
+export default function SourceSelector({ selectedSources, onChange, className = '', scene }: SourceSelectorProps) {
     const [sources, setSources] = useState<Source[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [filter, setFilter] = useState('')
+    const [recommending, setRecommending] = useState(false)
 
     useEffect(() => {
         loadSources()
@@ -27,11 +29,8 @@ export default function SourceSelector({ selectedSources, onChange, className = 
 
     const loadSources = async () => {
         try {
-            const response = await settingsAPI.getTopHub()
-            // Assuming response.data.sources is the list of sources
-            // If the API returns the config object, we might need to access sources differently
-            // Based on previous context, TopHub config usually has a 'sources' list
-            setSources(response.data.sources || [])
+            const response = await sourcesAPI.list()
+            setSources(response.data || [])
         } catch (err) {
             console.error('Failed to load sources:', err)
             setError('Failed to load sources')
@@ -45,6 +44,30 @@ export default function SourceSelector({ selectedSources, onChange, className = 
             ? selectedSources.filter(id => id !== hashid)
             : [...selectedSources, hashid]
         onChange(newSelected)
+    }
+
+    const handleRecommend = async () => {
+        if (!scene) {
+            alert('Please enter a scene description first.')
+            return
+        }
+        setRecommending(true)
+        try {
+            const res = await sourcesAPI.recommend(scene)
+            const recommended = res.data.recommended_sources
+            const recommendedIds = recommended.map((s: any) => s.hashid)
+
+            // Merge with existing selection
+            const newSelection = Array.from(new Set([...selectedSources, ...recommendedIds]))
+            onChange(newSelection)
+
+            alert(`✨ AI recommended ${recommended.length} sources for "${scene}"`)
+        } catch (err) {
+            console.error('Recommendation failed:', err)
+            alert('AI recommendation failed')
+        } finally {
+            setRecommending(false)
+        }
     }
 
     const filteredSources = sources.filter(source =>
@@ -66,14 +89,26 @@ export default function SourceSelector({ selectedSources, onChange, className = 
 
     return (
         <div className={`source-selector ${className}`}>
-            <div className="source-filter">
-                <input
-                    type="text"
-                    placeholder="Filter sources..."
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="filter-input"
-                />
+            <div className="source-toolbar">
+                <div className="source-filter">
+                    <input
+                        type="text"
+                        placeholder="Filter sources..."
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                        className="filter-input"
+                    />
+                </div>
+                {scene && (
+                    <button
+                        className="btn btn-sm btn-outline ai-recommend-btn"
+                        onClick={handleRecommend}
+                        disabled={recommending}
+                        title={`Recommend sources for scene: ${scene}`}
+                    >
+                        {recommending ? 'Thinking...' : '✨ AI Recommend'}
+                    </button>
+                )}
             </div>
 
             <div className="sources-list">

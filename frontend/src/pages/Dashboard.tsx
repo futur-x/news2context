@@ -199,13 +199,12 @@ function Dashboard() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Sources ({newTask.sources.length} selected)</label>
-                                <div className="source-selector-container">
-                                    <SourceSelector
-                                        selectedSources={newTask.sources}
-                                        onChange={sources => setNewTask({ ...newTask, sources })}
-                                    />
-                                </div>
+                                <label>Sources</label>
+                                <SourceSelector
+                                    selectedSources={newTask.sources}
+                                    onChange={(sources) => setNewTask({ ...newTask, sources })}
+                                    scene={newTask.scene}
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Schedule (Cron)</label>
