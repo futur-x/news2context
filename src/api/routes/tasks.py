@@ -5,7 +5,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from datetime import datetime
-from src.api.models import TaskDetail, TaskListResponse, CreateTaskRequest, UpdateTaskRequest
+from src.api.models import TaskDetail, TaskListResponse, CreateTaskRequest, UpdateTaskRequest, TaskSource, TaskStatus
 from src.core.task_manager import TaskManager
 
 router = APIRouter()
