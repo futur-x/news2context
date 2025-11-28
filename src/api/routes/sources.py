@@ -49,6 +49,10 @@ async def list_sources():
     """获取所有可用新闻源（从 TopHub API）"""
     try:
         sources = await get_all_sources_from_engine()
+        # 映射字段：engine 返回 'id'，但前端需要 'hashid'
+        for source in sources:
+            if 'id' in source and 'hashid' not in source:
+                source['hashid'] = source['id']
         return sources
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch sources: {str(e)}")
