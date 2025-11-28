@@ -227,7 +227,7 @@ class NewsCollector:
             # 更新任务状态
             self.task_manager.update_task_status(
                 task_name,
-                last_run=datetime.now()
+                {'last_run': datetime.now().isoformat()}
             )
             logger.success(f"任务 {task_name} 采集完成，共入库 {total_chunks} 个 chunks")
             return total_chunks
@@ -240,7 +240,7 @@ class NewsCollector:
             # 更新任务状态
             self.task_manager.update_task_status(
                 task_name,
-                last_run=datetime.now()
+                {'last_run': datetime.now().isoformat()}
             )
             logger.success(f"任务 {task_name} 采集完成，共入库 {total_news} 条新闻")
             return total_news
