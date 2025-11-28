@@ -45,10 +45,21 @@ async def browse_knowledge_base(
     
     # 获取知识库内容
     config = get_config()
-    collection_manager = CollectionManager(
-        weaviate_url=config.get('weaviate.url'),
-        api_key=config.get('weaviate.api_key')
-    )
+    
+    try:
+        collection_manager = CollectionManager(
+            weaviate_url=config.get('weaviate.url'),
+            api_key=config.get('weaviate.api_key')
+        )
+    except Exception as e:
+        # 如果连接失败，返回空列表而不是 500 错误
+        print(f"Weaviate connection failed: {e}")
+        return BrowseResponse(
+            items=[],
+            total=0,
+            task_name=task_name,
+            success=False
+        )
     
     try:
         # 查询所有内容
