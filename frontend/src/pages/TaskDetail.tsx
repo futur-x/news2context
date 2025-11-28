@@ -94,7 +94,7 @@ function TaskDetail() {
 
     const loadTaskStatus = async () => {
         try {
-            const response = await api.get(`/api/tasks/${taskName}/status`)
+            const response = await api.get(`/tasks/${taskName}/status`)
             setTaskStatus(response.data)
             // Reload full task if status changed from running to not running
             if (taskStatus?.running && !response.data.running) {
