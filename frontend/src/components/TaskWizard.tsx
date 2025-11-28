@@ -5,7 +5,7 @@ import './TaskWizard.css'
 
 interface TaskWizardProps {
     onClose: () => void
-    onSuccess: () => void
+    onSuccess: (taskName: string) => void
 }
 
 interface WizardData {
@@ -114,7 +114,7 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
                 await taskAPI.run(wizardData.name)
             }
 
-            onSuccess()
+            onSuccess(wizardData.name)
             onClose()
         } catch (error) {
             console.error('Failed to create task:', error)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { taskAPI } from '../api/client'
 import TaskWizard from '../components/TaskWizard'
 import './Dashboard.css'
@@ -31,6 +31,7 @@ function Dashboard() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [loading, setLoading] = useState(true)
     const [showWizard, setShowWizard] = useState(false)
+    const navigate = useNavigate()
 
     useEffect(() => {
         loadTasks()
@@ -45,6 +46,12 @@ function Dashboard() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleTaskCreated = (taskName: string) => {
+        loadTasks()
+        // Redirect to the new task page
+        navigate(`/tasks/${taskName}`)
     }
 
     if (loading) {
