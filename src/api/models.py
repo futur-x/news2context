@@ -26,6 +26,7 @@ class TaskSource(BaseModel):
     name: str
     hashid: str
     category: Optional[str] = None
+    url: Optional[str] = None
 
 class TaskStatus(BaseModel):
     """任务状态模型"""
