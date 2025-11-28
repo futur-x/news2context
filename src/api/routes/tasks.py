@@ -123,7 +123,7 @@ async def run_task(task_name: str):
             manager.update_task_status(task_name, {
                 'running': False,
                 'current_status': 'success',
-                'last_run': datetime.now(),
+                'last_run': datetime.now().isoformat(),
                 'total_runs': task.status.get('total_runs', 0) + 1,
                 'last_success_count': count,
                 'last_error': None,
