@@ -85,16 +85,77 @@ async def delete_task(task_name: str):
 @router.post("/tasks/{task_name}/run")
 async def run_task(task_name: str):
     """手动触发任务运行"""
-    # 这里只是简单触发，实际上可能需要异步处理或调用 Collector
-    # 为了演示，我们暂时只检查任务是否存在
     manager = TaskManager()
     task = manager.get_task(task_name)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task not found: {task_name}")
     
-    # TODO: 集成 Celery 或异步任务队列来真正运行任务
-    # 目前仅返回成功响应
-    return {"success": True, "message": f"Task {task_name} triggered (Async execution not yet implemented)"}
+    # 检查任务是否已在运行
+    if task.status.get('running', False):
+        return {"success": False, "message": f"Task {task_name} is already running"}
+    
+    # 启动异步任务
+    import asyncio
+    from src.core.collector import NewsCollector
+    
+    async def run_collection_task():
+        """后台运行采集任务"""
+        try:
+            # 更新状态为运行中
+            manager.update_task_status(task_name, {
+                'running': True,
+                'current_status': 'running',
+                'progress': {
+                    'total_sources': len(task.sources),
+                    'processed_sources': 0,
+                    'collected_articles': 0,
+                    'start_time': datetime.now().isoformat()
+                }
+            })
+            
+            # 执行采集
+            collector = NewsCollector()
+            count = await collector.collect_task(task_name)
+            
+            # 更新状态为成功
+            manager.update_task_status(task_name, {
+                'running': False,
+                'current_status': 'success',
+                'last_run': datetime.now(),
+                'total_runs': task.status.get('total_runs', 0) + 1,
+                'last_success_count': count,
+                'last_error': None,
+                'progress': None
+            })
+            
+        except Exception as e:
+            # 更新状态为错误
+            manager.update_task_status(task_name, {
+                'running': False,
+                'current_status': 'error',
+                'last_error': str(e),
+                'progress': None
+            })
+    
+    # 在后台运行任务
+    asyncio.create_task(run_collection_task())
+    
+    return {"success": True, "message": f"Task {task_name} started"}
+
+@router.get("/tasks/{task_name}/status")
+async def get_task_status(task_name: str):
+    """获取任务实时状态（用于轮询）"""
+    manager = TaskManager()
+    task = manager.get_task(task_name)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_name}")
+    
+    return {
+        "running": task.status.get('running', False),
+        "current_status": task.status.get('current_status', 'idle'),
+        "progress": task.status.get('progress'),
+        "last_error": task.status.get('last_error')
+    }
 
 def _convert_task_to_model(task) -> TaskDetail:
     """将内部 Task 对象转换为 API 模型"""
@@ -108,10 +169,14 @@ def _convert_task_to_model(task) -> TaskDetail:
     
     status = TaskStatus(
         enabled=task.status.get('enabled', True),
+        running=task.status.get('running', False),
+        current_status=task.status.get('current_status', 'idle'),
+        progress=task.status.get('progress'),
         last_run=task.status.get('last_run'),
         next_run=task.status.get('next_run'),
         total_runs=task.status.get('total_runs', 0),
-        last_error=task.status.get('last_error')
+        last_error=task.status.get('last_error'),
+        last_success_count=task.status.get('last_success_count', 0)
     )
     
     return TaskDetail(

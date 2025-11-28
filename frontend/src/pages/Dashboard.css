@@ -117,6 +117,59 @@
     color: var(--color-text-secondary);
 }
 
+/* Status Badges */
+.status-badges {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.badge-running {
+    background: var(--color-primary);
+    color: white;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.badge-idle {
+    background: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Task Progress */
+.task-progress {
+    margin: var(--space-sm) 0;
+}
+
+.progress-bar {
+    height: 6px;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-xs);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-accent-success));
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+}
+
 /* Modal Styles */
 .modal-overlay {
     position: fixed;

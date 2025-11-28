@@ -1,0 +1,141 @@
+created_at: '2025-11-26T16:52:33.889214'
+engine:
+  name: tophub
+locked: true
+name: news-ceo
+scene: 上市公司董事长,政经类,科技类,经济类
+schedule:
+  cron: 0 8 * * *
+  custom_range:
+    end: null
+    start: null
+  date_range: today
+sources:
+- category: 博客专栏
+  display: ''
+  hashid: DOvnyGpoEB
+  name: 产品经理的人工智能学习库
+- category: 大学
+  display: 招考政策
+  hashid: YqoXbjzdOD
+  name: 北京教育考试院
+- category: 开发者
+  display: 人工智能本周最热
+  hashid: rYqoXz8dOD
+  name: 掘金
+- category: 政务
+  display: 最新政策
+  hashid: 47o8ELqvMm
+  name: 中国政府网
+- category: 电子报
+  display: 电子报
+  hashid: 4Kvxj2wekx
+  name: 中国市场监管报
+- category: 科技
+  display: ''
+  hashid: n3moBJEoN5
+  name: 9to5Google
+- category: 综合
+  display: ESG热榜
+  hashid: Ywv4jRxePa
+  name: 新浪热榜
+- category: 财经
+  display: TOP100
+  hashid: aqeEaZVe9R
+  name: 美股市值
+- category: 博客专栏
+  display: 人工智能学习笔记
+  hashid: proPVK4dq6
+  name: 知乎专栏
+- category: 大学
+  display: 最新通知
+  hashid: 47o8O60eMm
+  name: 华中科技大学人工智能和自动化学院
+- category: 开发者
+  display: 人工智能热榜
+  hashid: 47o8bRLdMm
+  name: CSDN博客
+- category: 政务
+  display: 政策解读
+  hashid: nBe0B3bv37
+  name: 中国政府网
+- category: 科技
+  display: 人工智能
+  hashid: 5PdMP7pvmg
+  name: 凤凰科技
+- category: 综合
+  display: 政策
+  hashid: ARe1mZ4e7n
+  name: 中国服装产业网
+- category: 财经
+  display: 股市滚动新闻
+  hashid: 1VdJYjnvLQ
+  name: 中国经济网
+- category: 大学
+  display: 新闻
+  hashid: 5PdMV7Eemg
+  name: 华中科技大学人工智能和自动化学院
+- category: 政务
+  display: 政策法规
+  hashid: ENeYQPpeY4
+  name: 中华人民共和国人力资源和社会保障部
+- category: 科技
+  display: 人工智能
+  hashid: aqeE3Lrv9R
+  name: CNMO
+- category: 综合
+  display: ''
+  hashid: MZd7zm6vrO
+  name: Google Alert - 服装供应链
+- category: 财经
+  display: 股市
+  hashid: 1VdJkxkeLQ
+  name: 财联社
+- category: 大学
+  display: 政策规定
+  hashid: 6YoVyJaeZa
+  name: 湖北招生信息综合服务平台
+- category: 政务
+  display: 政策发布
+  hashid: 1Vd5Rm5e85
+  name: 中华人民共和国商务部
+- category: 科技
+  display: 人工智能
+  hashid: ARe1jk7o7n
+  name: ZDNET
+- category: 综合
+  display: 解读上市公司
+  hashid: nBe0gM1d37
+  name: 服装新闻
+- category: 财经
+  display: 每周精选
+  hashid: WmoOWKDo4E
+  name: 國外股市熱門
+- category: 政务
+  display: 图解政策
+  hashid: anopy7kvlZ
+  name: 中国政府网
+- category: 科技
+  display: 资讯 · 人工智能
+  hashid: m4ejkWyoxE
+  name: 知识分子
+- category: 综合
+  display: 政策
+  hashid: 7GdazkpeQy
+  name: 服装视频
+- category: 财经
+  display: 股市榜
+  hashid: 1Vd5NkWe85
+  name: 头条热榜
+- category: 政务
+  display: 政策发布
+  hashid: YqoXb1KdOD
+  name: 中华人民共和国住房和城乡建设部
+status:
+  enabled: true
+  last_error: null
+  last_run: null
+  next_run: null
+  total_runs: 0
+weaviate:
+  collection: News_ceo_db

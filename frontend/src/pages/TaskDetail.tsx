@@ -42,11 +42,30 @@ function TaskDetail() {
     const [addingSources, setAddingSources] = useState(false)
     const [selectedNewSources, setSelectedNewSources] = useState<string[]>([])
 
+    // Task execution status polling
+    const [taskStatus, setTaskStatus] = useState<any>(null)
+    const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
+
     useEffect(() => {
         if (taskName) {
             loadTask()
+            loadTaskStatus()
         }
     }, [taskName])
+
+    // Poll task status when running
+    useEffect(() => {
+        if (taskStatus?.running) {
+            const interval = setInterval(() => {
+                loadTaskStatus()
+            }, 2000) // Poll every 2 seconds
+            setPollingInterval(interval)
+            return () => clearInterval(interval)
+        } else if (pollingInterval) {
+            clearInterval(pollingInterval)
+            setPollingInterval(null)
+        }
+    }, [taskStatus?.running])
 
     const loadTask = async () => {
         try {
@@ -70,6 +89,30 @@ function TaskDetail() {
             console.error('Failed to load KB content:', error)
         } finally {
             setLoadingKb(false)
+        }
+    }
+
+    const loadTaskStatus = async () => {
+        try {
+            const response = await api.get(`/api/tasks/${taskName}/status`)
+            setTaskStatus(response.data)
+            // Reload full task if status changed from running to not running
+            if (taskStatus?.running && !response.data.running) {
+                loadTask()
+            }
+        } catch (error) {
+            console.error('Failed to load task status:', error)
+        }
+    }
+
+    const handleRunTask = async () => {
+        try {
+            await taskAPI.run(taskName!)
+            // Immediately poll status
+            setTimeout(() => loadTaskStatus(), 500)
+        } catch (error) {
+            console.error('Failed to run task:', error)
+            alert('Failed to start task')
         }
     }
 
@@ -227,8 +270,12 @@ function TaskDetail() {
                     <p className="page-subtitle">{task.scene}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                    <button className="btn btn-primary" onClick={() => taskAPI.run(taskName!)}>
-                        ▶ Run Now
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleRunTask}
+                        disabled={taskStatus?.running}
+                    >
+                        {taskStatus?.running ? '⏸ Running...' : '▶ Run Now'}
                     </button>
                     <button className="btn btn-secondary" style={{ color: 'var(--color-accent-error)' }} onClick={handleDeleteTask}>
                         🗑️ Delete
@@ -237,6 +284,51 @@ function TaskDetail() {
             </div>
 
             <div className="detail-grid">
+                {/* Execution Status Section */}
+                {(taskStatus?.running || taskStatus?.current_status === 'error') && (
+                    <div className="detail-section execution-status">
+                        <h2 className="section-title">🔄 Execution Status</h2>
+                        <div className="status-content">
+                            {taskStatus.running && (
+                                <>
+                                    <div className="status-badge running">● Running</div>
+                                    {taskStatus.progress && (
+                                        <>
+                                            <div className="progress-bar-large">
+                                                <div
+                                                    className="progress-fill-large"
+                                                    style={{
+                                                        width: `${(taskStatus.progress.processed_sources / taskStatus.progress.total_sources) * 100}%`
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="progress-details">
+                                                <div className="progress-item">
+                                                    <span className="label">Processed:</span>
+                                                    <span className="value">{taskStatus.progress.processed_sources}/{taskStatus.progress.total_sources} sources</span>
+                                                </div>
+                                                <div className="progress-item">
+                                                    <span className="label">Collected:</span>
+                                                    <span className="value">{taskStatus.progress.collected_articles} articles</span>
+                                                </div>
+                                                <div className="progress-item">
+                                                    <span className="label">Started:</span>
+                                                    <span className="value">{new Date(taskStatus.progress.start_time).toLocaleTimeString()}</span>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                            {taskStatus.current_status === 'error' && taskStatus.last_error && (
+                                <div className="error-message">
+                                    <strong>Error:</strong> {taskStatus.last_error}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 <div className="detail-section">
                     <h2 className="section-title">Overview</h2>
                     <div className="stats-grid">

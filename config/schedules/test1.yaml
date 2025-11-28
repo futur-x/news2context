@@ -1,0 +1,36 @@
+created_at: '2025-11-28T15:47:37.623225'
+engine:
+  name: tophub
+locked: true
+name: test1
+scene: 医生，看医学类的新闻
+schedule:
+  cron: 0 8 * * *
+  custom_range:
+    end: null
+    start: null
+  date_range: last_1_days
+sources:
+- category: 综合
+  hashid: mproPpoq6O
+  name: 知乎
+- category: 综合
+  hashid: KMZd7VOvrO
+  name: 知乎日报
+- category: 综合
+  hashid: qndg1WxoLl
+  name: CCTV央视新闻
+- category: 电子报
+  hashid: 47o89EgvMm
+  name: 医药经济报
+- category: 电子报
+  hashid: KGoRlpQdl6
+  name: 医药卫生报
+status:
+  enabled: true
+  last_error: null
+  last_run: null
+  next_run: null
+  total_runs: 0
+weaviate:
+  collection: Test1_db

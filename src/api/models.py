@@ -30,10 +30,14 @@ class TaskSource(BaseModel):
 class TaskStatus(BaseModel):
     """任务状态模型"""
     enabled: bool
+    running: bool = False  # 是否正在运行
+    current_status: str = "idle"  # idle/running/success/error
+    progress: Optional[Dict[str, Any]] = None  # 进度信息
     last_run: Optional[datetime] = None
     next_run: Optional[datetime] = None
     total_runs: int = 0
     last_error: Optional[str] = None
+    last_success_count: int = 0  # 上次成功采集数量
 
 class TaskDetail(BaseModel):
     """任务详情模型"""

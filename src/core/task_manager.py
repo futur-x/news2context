@@ -234,41 +234,31 @@ class TaskManager:
     def update_task_status(
         self,
         name: str,
-        last_run: Optional[datetime] = None,
-        next_run: Optional[datetime] = None,
-        error: Optional[str] = None
+        status_updates: Dict[str, Any]
     ) -> bool:
         """
-        更新任务状态
+        更新任务状态（支持所有状态字段）
         
         Args:
             name: 任务名称
-            last_run: 最后运行时间
-            next_run: 下次运行时间
-            error: 错误信息
+            status_updates: 状态更新字典
             
         Returns:
-            是否成功更新
+            是否更新成功
         """
         task = self.get_task(name)
-        
         if not task:
-            logger.warning(f"任务不存在: {name}")
+            logger.error(f"任务 {name} 不存在")
             return False
+            
+        task_data = task.to_dict()
         
-        # 更新状态
-        if last_run:
-            task.status['last_run'] = last_run.isoformat()
-            task.status['total_runs'] = task.status.get('total_runs', 0) + 1
-        
-        if next_run:
-            task.status['next_run'] = next_run.isoformat()
-        
-        if error:
-            task.status['last_error'] = error
-        
-        # 保存
-        self._save_task(name, task.to_dict())
+        # 更新状态字段
+        for key, value in status_updates.items():
+            task_data['status'][key] = value
+            
+        # 保存更新
+        self._save_task(name, task_data)
         logger.info(f"任务状态已更新: {name}")
         return True
     

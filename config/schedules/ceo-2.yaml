@@ -1,0 +1,141 @@
+created_at: '2025-11-26T18:13:49.896179'
+engine:
+  name: tophub
+locked: true
+name: ceo-2
+scene: 关心 国家政策,国内外政治经济,科技的董事长
+schedule:
+  cron: 0 8 * * *
+  custom_range:
+    end: null
+    start: null
+  date_range: last_1_days
+sources:
+- category: 政务
+  display: 政务公开 > 政策 > 发展改革委令
+  hashid: 3QeLwpAd7k
+  name: 中华人民共和国国家发展和改革委员会
+- category: 科技
+  display: ''
+  hashid: n3moBJEoN5
+  name: 9to5Google
+- category: 财经
+  display: TOP100
+  hashid: aqeEaZVe9R
+  name: 美股市值
+- category: 博客专栏
+  display: ''
+  hashid: Kqndg8LeLl
+  name: D2-daily
+- category: 大学
+  display: 招考政策
+  hashid: YqoXbjzdOD
+  name: 北京教育考试院
+- category: 开发者
+  display: 区块链热榜
+  hashid: 5PdMlalvmg
+  name: CSDN博客
+- category: 电子报
+  display: 电子报
+  hashid: 5PdMlB0vmg
+  name: 金融投资报
+- category: 社区
+  display: 机器学习
+  hashid: KGoRGmZvl6
+  name: AIQ
+- category: 综合
+  display: China News
+  hashid: 3adqR13eng
+  name: China Daily
+- category: 购物
+  display: Today
+  hashid: 6YoVWONvZa
+  name: OzBargain
+- category: 政务
+  display: 政务公开 > 解读 > 政策图解
+  hashid: ARe13x2v7n
+  name: 中华人民共和国国家发展和改革委员会
+- category: 科技
+  display: 滚动资讯
+  hashid: proPkqneq6
+  name: 投资界
+- category: 财经
+  display: 股市滚动新闻
+  hashid: 1VdJYjnvLQ
+  name: 中国经济网
+- category: 博客专栏
+  display: Daily
+  hashid: 4Kvx5Aldkx
+  name: 奇舞周刊
+- category: 大学
+  display: 建设与改革
+  hashid: RrvWBjxo5z
+  name: 西南科技大学教务处
+- category: 开发者
+  display: Daily Papers
+  hashid: KGoRE42el6
+  name: Hugging Face
+- category: 电子报
+  display: 电子报
+  hashid: 1Vd5aZ5d85
+  name: 中国改革报
+- category: 社区
+  display: 用利息生活｜投资理财
+  hashid: 2me3AR0vwj
+  name: 豆瓣小组
+- category: 综合
+  display: Today
+  hashid: yjvQy54vbg
+  name: iDaily · 每日环球视野
+- category: 政务
+  display: 政务公开 > 解读 > 政策解读
+  hashid: 12owDBmvNV
+  name: 中华人民共和国国家发展和改革委员会
+- category: 科技
+  display: AI日报
+  hashid: ENeYylkeY4
+  name: AIbase
+- category: 财经
+  display: 热门文章
+  hashid: 4MdAZ5GexD
+  name: 白话区块链
+- category: 博客专栏
+  display: ''
+  hashid: DgeyPAKdZq
+  name: Hacker News Daily
+- category: 大学
+  display: 政策规定
+  hashid: 6YoVyJaeZa
+  name: 湖北招生信息综合服务平台
+- category: 开发者
+  display: Daily Updates
+  hashid: m4ejZwqexE
+  name: Track Awesome List
+- category: 社区
+  display: 用利息生活｜投资理财
+  hashid: Q0orPJWd8B
+  name: 豆瓣小组
+- category: 综合
+  display: China Daily News
+  hashid: DgeyxRqdZq
+  name: China Daily
+- category: 政务
+  display: 政务公开 > 政策 > 规划文本
+  hashid: 3moB0KVdN5
+  name: 中华人民共和国国家发展和改革委员会
+- category: 科技
+  display: AI文章资讯中心
+  hashid: 8Rv2NjnvLw
+  name: AI工具集
+- category: 财经
+  display: 今日发现
+  hashid: MZd736PdrO
+  name: ChainFeeds
+status:
+  enabled: true
+  last_error: null
+  last_run: '2025-11-26T18:30:37.478501'
+  next_run: null
+  total_runs: 1
+weaviate:
+  collection: Ceo_2_db
