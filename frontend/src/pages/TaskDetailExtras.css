@@ -1,11 +1,9 @@
-/* TaskDetailExtras.css */
-
-/* Source Management Styles */
+/* Sources Grid Layout */
 .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-lg);
 }
 
 .sources-grid {
@@ -15,213 +13,213 @@
 }
 
 .source-card {
-    background: var(--color-bg-secondary);
+    background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: var(--space-md);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all var(--transition-fast);
+    transition: all 0.2s ease;
 }
 
 .source-card:hover {
     border-color: var(--color-accent-primary);
+    transform: translateY(-1px);
 }
 
 .source-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex: 1;
 }
 
 .source-name {
     font-weight: 500;
     color: var(--color-text-primary);
-    font-size: var(--text-sm);
+    margin-bottom: var(--space-xs);
 }
 
 .source-category {
     font-size: var(--text-xs);
     color: var(--color-text-tertiary);
-    text-transform: uppercase;
 }
 
 .remove-source-btn {
+    background: transparent;
+    border: none;
     color: var(--color-text-tertiary);
+    cursor: pointer;
     font-size: var(--text-lg);
-    padding: 4px;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: var(--space-xs);
+    transition: color 0.2s ease;
 }
 
 .remove-source-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--color-accent-error);
+    color: var(--color-danger);
 }
 
-.btn-sm {
-    padding: var(--space-xs) var(--space-sm);
-    font-size: var(--text-xs);
+/* Knowledge Base Grid Layout */
+.kb-content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
 }
 
-.btn-outline {
-    background: transparent;
+.kb-card {
+    background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
-    color: var(--color-text-primary);
-}
-
-.btn-outline:hover {
-    border-color: var(--color-accent-primary);
-    color: var(--color-accent-primary);
-}
-
-/* KB Content List Styles (Existing) */
-.kb-content-list {
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
+    transition: all 0.2s ease;
+    height: 100%;
 }
 
-.kb-item {
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
+.kb-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-accent-primary);
 }
 
-.kb-item-title {
+.kb-card-title {
     font-size: var(--text-md);
     font-weight: 600;
     color: var(--color-text-primary);
-    margin-bottom: var(--space-sm);
+    line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.kb-item-content {
+.kb-card-content {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
-    margin-bottom: var(--space-sm);
-    line-height: 1.5;
-}
-
-.kb-item-meta {
-    display: flex;
-    gap: var(--space-md);
-    font-size: var(--text-xs);
-    color: var(--color-text-tertiary);
-    margin-bottom: var(--space-xs);
-}
-
-.kb-item-link {
-    font-size: var(--text-xs);
-    color: var(--color-accent-primary);
-    text-decoration: none;
-}
-
-.kb-item-link:hover {
-    text-decoration: underline;
-}
-
-/* Search Mode Selector Styles (Existing) */
-.search-mode-selector {
-    display: flex;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-sm);
-}
-
-.mode-btn {
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg-secondary);
-    color: var(--color-text-secondary);
-    font-size: var(--text-xs);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.mode-btn:hover {
-    border-color: var(--color-accent-primary);
-}
-
-.mode-btn.active {
-    background: var(--color-accent-primary);
-    color: white;
-    border-color: var(--color-accent-primary);
-}
-
-/* Execution Status Section */
-.execution-status {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
-    border: 1px solid var(--color-primary);
-}
-
-.status-content {
-    padding: var(--space-md);
-}
-
-.status-badge.running {
-    display: inline-block;
-    padding: var(--space-xs) var(--space-md);
-    background: var(--color-primary);
-    color: white;
-    border-radius: var(--radius-full);
-    font-weight: 600;
-    margin-bottom: var(--space-md);
-    animation: pulse 2s ease-in-out infinite;
-}
-
-.progress-bar-large {
-    height: 12px;
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-full);
+    line-height: 1.6;
+    flex-grow: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: var(--space-md);
 }
 
-.progress-fill-large {
-    height: 100%;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-accent-success));
-    transition: width 0.5s ease;
-}
-
-.progress-details {
+.kb-card-meta {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border);
 }
 
-.progress-item {
+.kb-source,
+.kb-date {
     display: flex;
-    justify-content: space-between;
-    padding: var(--space-sm);
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-md);
+    align-items: center;
+    gap: var(--space-xs);
 }
 
-.progress-item .label {
-    font-weight: 600;
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-xl) 0;
+}
+
+.pagination-info {
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
+    min-width: 200px;
+    text-align: center;
 }
 
-.progress-item .value {
-    color: var(--color-text-primary);
+.pagination .btn {
+    min-width: 120px;
+}
+
+.pagination .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* API Parameters Documentation */
+.api-params-doc {
+    margin-top: var(--space-lg);
+}
+
+.api-params-doc label {
+    font-size: var(--text-sm);
     font-weight: 500;
-}
-
-.error-message {
-    padding: var(--space-md);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid var(--color-accent-error);
-    border-radius: var(--radius-md);
-    color: var(--color-accent-error);
-}
-
-.error-message strong {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-sm);
     display: block;
-    margin-bottom: var(--space-xs);
+}
+
+.params-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.params-list>li {
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.params-list>li:last-child {
+    border-bottom: none;
+}
+
+.params-list code {
+    background: var(--color-bg-primary);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-accent-primary);
+}
+
+.params-list ul {
+    margin-top: var(--space-xs);
+    padding-left: var(--space-lg);
+    list-style: disc;
+}
+
+.params-list ul li {
+    padding: var(--space-xs) 0;
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .kb-content-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .kb-content-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: var(--space-md);
+    }
+
+    .kb-card {
+        padding: var(--space-md);
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .pagination .btn {
+        width: 100%;
+    }
 }

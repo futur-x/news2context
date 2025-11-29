@@ -15,7 +15,10 @@ export const taskAPI = {
     update: (name: string, data: any) => api.put(`/tasks/${name}`, data),
     delete: (name: string) => api.delete(`/tasks/${name}`),
     run: (name: string) => api.post(`/tasks/${name}/run`),
-    browse: (name: string, limit: number = 20) => api.get(`/tasks/${name}/browse`, { params: { limit } })
+    status: (name: string) => api.get(`/tasks/${name}/status`),
+    browse: (name: string, options?: { limit?: number; offset?: number }) =>
+        api.get(`/tasks/${name}/browse`, { params: options }),
+    addSources: (name: string, sources: string[]) => api.post(`/tasks/${name}/sources`, { sources })
 }
 
 // Settings API

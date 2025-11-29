@@ -36,6 +36,9 @@ function TaskDetail() {
     // Knowledge base content
     const [kbContent, setKbContent] = useState<any[]>([])
     const [loadingKb, setLoadingKb] = useState(false)
+    const [kbPage, setKbPage] = useState(1)
+    const [kbTotal, setKbTotal] = useState(0)
+    const kbPageSize = 24  // 每页显示 24 条（4列 × 6行）
 
     // Source management state
     const [showAddSourceModal, setShowAddSourceModal] = useState(false)
@@ -50,6 +53,7 @@ function TaskDetail() {
         if (taskName) {
             loadTask()
             loadTaskStatus()
+            loadKnowledgeBase()
         }
     }, [taskName])
 
@@ -72,7 +76,7 @@ function TaskDetail() {
             const response = await taskAPI.get(taskName!)
             setTask(response.data)
             // Load knowledge base content
-            loadKbContent()
+            loadKnowledgeBase()
         } catch (error) {
             console.error('Failed to load task:', error)
         } finally {
@@ -80,13 +84,17 @@ function TaskDetail() {
         }
     }
 
-    const loadKbContent = async () => {
+    const loadKnowledgeBase = async (page: number = 1) => {
+        if (!taskName) return
         setLoadingKb(true)
         try {
-            const response = await taskAPI.browse(taskName!, 20)
-            setKbContent(response.data.items || [])
-        } catch (error) {
-            console.error('Failed to load KB content:', error)
+            const offset = (page - 1) * kbPageSize
+            const res = await taskAPI.browse(taskName!, { limit: kbPageSize, offset })
+            setKbContent(res.data.items || [])
+            setKbTotal(res.data.total || 0)
+            setKbPage(page)
+        } catch (err) {
+            console.error('Failed to load KB content:', err)
         } finally {
             setLoadingKb(false)
         }
@@ -381,31 +389,47 @@ function TaskDetail() {
                 </div>
 
                 <div className="detail-section">
-                    <h2 className="section-title">📚 Knowledge Base Content ({kbContent.length} items)</h2>
+                    <h2 className="section-title">📚 Knowledge Base Content ({kbTotal} total items)</h2>
                     {loadingKb ? (
                         <div className="loading">Loading content...</div>
                     ) : kbContent.length > 0 ? (
-                        <div className="kb-content-list">
-                            {kbContent.map((item, idx) => (
-                                <div key={idx} className="kb-item">
-                                    <h4 className="kb-item-title">{item.title}</h4>
-                                    <div className="kb-item-content">
-                                        {item.content?.substring(0, 200)}...
+                        <>
+                            <div className="kb-content-grid">
+                                {kbContent.map((item, idx) => (
+                                    <div key={idx} className="kb-card">
+                                        <h4 className="kb-card-title">{item.title}</h4>
+                                        <div className="kb-card-content">
+                                            {item.content?.substring(0, 150)}...
+                                        </div>
+                                        <div className="kb-card-meta">
+                                            <span className="kb-source">📰 {item.source_name}</span>
+                                            {item.published_at && (
+                                                <span className="kb-date">📅 {new Date(item.published_at).toLocaleDateString()}</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="kb-item-meta">
-                                        <span>📰 {item.source_name}</span>
-                                        {item.published_at && (
-                                            <span>📅 {new Date(item.published_at).toLocaleDateString()}</span>
-                                        )}
-                                    </div>
-                                    {item.url && (
-                                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="kb-item-link">
-                                            查看原文 →
-                                        </a>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                            <div className="pagination">
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => loadKnowledgeBase(kbPage - 1)}
+                                    disabled={kbPage === 1}
+                                >
+                                    ← Previous
+                                </button>
+                                <span className="pagination-info">
+                                    Page {kbPage} of {Math.ceil(kbTotal / kbPageSize)} ({kbTotal} items)
+                                </span>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => loadKnowledgeBase(kbPage + 1)}
+                                    disabled={kbPage >= Math.ceil(kbTotal / kbPageSize)}
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        </>
                     ) : (
                         <div className="empty-state">暂无内容</div>
                     )}
