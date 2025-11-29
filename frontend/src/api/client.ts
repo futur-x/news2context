@@ -38,7 +38,7 @@ export const externalAPI = {
 // Chat API
 export const sourcesAPI = {
     list: () => api.get('/sources'),
-    recommend: (scene: string) => api.post('/sources/recommend', { scene })
+    recommend: (scene: string, maxSources: number = 10) => api.post('/sources/recommend', { scene, max_sources: maxSources })
 }
 
 export const chatAPI = {

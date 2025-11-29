@@ -61,7 +61,7 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
     const handleRecommend = async () => {
         setLoading(true)
         try {
-            const res = await sourcesAPI.recommend(wizardData.scene)
+            const res = await sourcesAPI.recommend(wizardData.scene, wizardData.maxSources)
             const recommended = res.data.recommended_sources
             setWizardData({
                 ...wizardData,
