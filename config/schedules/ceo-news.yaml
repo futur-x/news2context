@@ -11,10 +11,6 @@ schedule:
     start: null
   date_range: today
 sources:
-- category: 政务
-  hashid: 3QeLwpAd7k
-  name: 中华人民共和国国家发展和改革委员会
-  url: null
 - category: 科技
   hashid: 5PdMP7pvmg
   name: 凤凰科技
@@ -22,10 +18,6 @@ sources:
 - category: 博客专栏
   hashid: DOvnyGpoEB
   name: 产品经理的人工智能学习库
-  url: null
-- category: 大学
-  hashid: YqoXbjzdOD
-  name: 北京教育考试院
   url: null
 - category: 开发者
   hashid: rYqoXz8dOD
@@ -43,26 +35,6 @@ sources:
   hashid: aqeEaZVe9R
   name: 美股市值
   url: null
-- category: 政务
-  hashid: ARe13x2v7n
-  name: 中华人民共和国国家发展和改革委员会
-  url: null
-- category: 科技
-  hashid: aqeE3Lrv9R
-  name: CNMO
-  url: null
-- category: 博客专栏
-  hashid: proPVK4dq6
-  name: 知乎专栏
-  url: null
-- category: 大学
-  hashid: 47o8O60eMm
-  name: 华中科技大学人工智能和自动化学院
-  url: null
-- category: 开发者
-  hashid: 47o8bRLdMm
-  name: CSDN博客
-  url: null
 - category: 电子报
   hashid: 1Vd5aZ5d85
   name: 中国改革报
@@ -75,71 +47,67 @@ sources:
   hashid: 1VdJYjnvLQ
   name: 中国经济网
   url: null
-- category: 政务
-  hashid: 12owDBmvNV
-  name: 中华人民共和国国家发展和改革委员会
-  url: null
-- category: 科技
-  hashid: ARe1jk7o7n
-  name: ZDNET
-  url: null
-- category: 大学
-  hashid: 5PdMV7Eemg
-  name: 华中科技大学人工智能和自动化学院
-  url: null
-- category: 综合
-  hashid: ARe1mZ4e7n
-  name: 中国服装产业网
-  url: null
 - category: 财经
   hashid: 1VdJkxkeLQ
   name: 财联社
-  url: null
-- category: 政务
-  hashid: 3moB0KVdN5
-  name: 中华人民共和国国家发展和改革委员会
-  url: null
-- category: 科技
-  hashid: m4ejkWyoxE
-  name: 知识分子
-  url: null
-- category: 大学
-  hashid: RrvWBjxo5z
-  name: 西南科技大学教务处
-  url: null
-- category: 综合
-  hashid: nBe0gM1d37
-  name: 服装新闻
   url: null
 - category: 财经
   hashid: WmoOWKDo4E
   name: 國外股市熱門
   url: null
-- category: 政务
-  hashid: 0MdKJV2vw1
-  name: 中华人民共和国国家发展和改革委员会
-  url: null
 - category: 科技
   hashid: Q1Vd5Ko85R
   name: 36氪
-  url: null
-- category: 大学
-  hashid: 6YoVyJaeZa
-  name: 湖北招生信息综合服务平台
-  url: null
-- category: 综合
-  hashid: 7GdazkpeQy
-  name: 服装视频
   url: null
 - category: 综合
   hashid: KMZd7VOvrO
   name: 知乎日报
   url: null
+- category: 政务
+  hashid: 47o8ELqvMm
+  name: 中国政府网
+  url: null
+- category: 政务
+  hashid: YKd6JOqdaP
+  name: 国家统计局
+  url: null
+- category: 财经
+  hashid: 3QeLGVPd7k
+  name: 财新网
+  url: null
+- category: 财经
+  hashid: rx9ozj7oXb
+  name: 新浪财经新闻
+  url: null
+- category: 科技
+  hashid: NRrvWYDe5z
+  name: 极客公园
+  url: null
+- category: 电子报
+  hashid: x9oz03bdXb
+  name: 人民日报
+  url: null
+- category: 科技
+  hashid: KGoRAz2el6
+  name: cnBeta
+  url: null
+- category: 电子报
+  hashid: YqoXVNzdOD
+  name: 每日经济新闻
+  url: null
+- category: 电子报
+  hashid: JndkwKpd3V
+  name: 中国经济周刊
+  url: null
 status:
+  current_status: success
   enabled: true
   last_error: null
-  last_run: null
+  last_run: '2025-11-29T22:19:35.495621'
+  last_success_count: 158
   next_run: null
-  total_runs: 0
+  progress: null
+  running: false
+  total_runs: 1
 weaviate:
   collection: Ceo_news_db

@@ -184,7 +184,6 @@ function TaskDetail() {
 
     const handleRemoveSource = async (sourceHashId: string) => {
         if (!task) return
-        if (!confirm('Are you sure you want to remove this source?')) return
 
         try {
             const updatedSources = task.sources.filter((s: any) => s.hashid !== sourceHashId)
