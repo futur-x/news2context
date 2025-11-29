@@ -51,6 +51,14 @@ sources:
   hashid: mproPpoq6O
   name: 知乎
   url: null
+- category: 综合
+  hashid: WnBe01o371
+  name: 微信
+  url: null
+- category: 综合
+  hashid: KMZd7VOvrO
+  name: 知乎日报
+  url: null
 status:
   current_status: success
   enabled: true

@@ -64,15 +64,19 @@ async def update_task(task_name: str, request: UpdateTaskRequest):
     manager = TaskManager()
     try:
         updates = request.dict(exclude_unset=True)
+        print(f"[DEBUG] Updating task {task_name} with updates: {updates}")
         # 如果包含 sources，需要转换为字典
         if 'sources' in updates:
             updates['sources'] = [s.dict() for s in request.sources]
+            print(f"[DEBUG] Converted sources count: {len(updates['sources'])}")
             
         task = manager.update_task(task_name, updates)
+        print(f"[DEBUG] Task updated successfully, new sources count: {len(task.sources)}")
         return _convert_task_to_model(task)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        print(f"[ERROR] Update task failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/tasks/{task_name}")

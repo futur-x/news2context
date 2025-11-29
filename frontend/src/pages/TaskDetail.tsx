@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { taskAPI, externalAPI, chatAPI } from '../api/client'
-import api from '../api/client'
+import api, { taskAPI, externalAPI, sourcesAPI } from '../api/client'
 import SourceSelector from '../components/SourceSelector'
 import './TaskDetail.css'
 import './TaskDetailExtras.css'
@@ -114,7 +112,7 @@ function TaskDetail() {
         if (!itemToDelete) return
 
         try {
-            await api.delete(`/tasks/${taskName}/items/${itemToDelete.id}`)
+            await api.delete(`/ tasks / ${taskName} /items/${itemToDelete.id} `)
             setShowDeleteConfirm(false)
             setItemToDelete(null)
             // 删除后刷新列表
@@ -205,9 +203,13 @@ function TaskDetail() {
 
         setAddingSources(true)
         try {
-            // Fetch source details to map hashids
-            const settingsRes = await import('../api/client').then(m => m.settingsAPI.getTopHub())
-            const allSources = settingsRes.data.sources || []
+            console.log('[DEBUG] Starting add sources, selected:', selectedNewSources)
+
+            // Fetch source details to map hashids - 使用正确的 API
+            const settingsRes = await sourcesAPI.list()
+            const allSources = settingsRes.data || []
+            console.log('[DEBUG] All sources count:', allSources.length)
+
             const newSourceObjects = allSources
                 .filter((s: any) => selectedNewSources.includes(s.hashid))
                 .map((s: any) => ({
@@ -216,19 +218,32 @@ function TaskDetail() {
                     category: s.category
                 }))
 
+            console.log('[DEBUG] New source objects:', newSourceObjects)
+
             // Merge with existing sources, avoiding duplicates
             const existingHashIds = task.sources.map((s: any) => s.hashid)
             const sourcesToAdd = newSourceObjects.filter((s: any) => !existingHashIds.includes(s.hashid))
 
+            console.log('[DEBUG] Sources to add (after dedup):', sourcesToAdd)
+
             if (sourcesToAdd.length === 0) {
-                alert('Selected sources are already added')
                 setShowAddSourceModal(false)
+                setAddingSources(false)
+                console.log('[DEBUG] No new sources to add (all duplicates)')
                 return
             }
 
             const updatedSources = [...task.sources, ...sourcesToAdd]
+            console.log('[DEBUG] Updated sources count:', updatedSources.length)
 
             await taskAPI.update(taskName!, {
+                sources: updatedSources
+            })
+
+            console.log('[DEBUG] API call successful')
+
+            setTask({
+                ...task,
                 sources: updatedSources
             })
 
@@ -237,7 +252,7 @@ function TaskDetail() {
             loadTask()
         } catch (error) {
             console.error('Failed to add sources:', error)
-            alert('Failed to add sources')
+            alert('添加源失败')
         } finally {
             setAddingSources(false)
         }

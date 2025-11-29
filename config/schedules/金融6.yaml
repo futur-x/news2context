@@ -11,73 +11,13 @@ schedule:
     start: null
   date_range: last_1_days
 sources:
-- category: 财经
-  hashid: 0MdKam4ow1
-  name: 第一财经
+- category: 测试
+  hashid: test123
+  name: 测试源1
   url: null
-- category: 财经
-  hashid: x9ozBY7oXb
-  name: 财新网
-  url: null
-- category: 财经
-  hashid: rx9ozj7oXb
-  name: 新浪财经新闻
-  url: null
-- category: 财经
-  hashid: 3QeLGVPd7k
-  name: 财新网
-  url: null
-- category: 财经
-  hashid: X12owXzvNV
-  name: 雪球
-  url: null
-- category: 财经
-  hashid: G2me3ndwjq
-  name: 华尔街见闻
-  url: null
-- category: 财经
-  hashid: RrvWOwRv5z
-  name: 雪球
-  url: null
-- category: 财经
-  hashid: qndg5MpoLl
-  name: 财联社
-  url: null
-- category: 财经
-  hashid: wWmoO8kv4E
-  name: 华尔街见闻
-  url: null
-- category: 财经
-  hashid: YqoXzxqdOD
-  name: 英为财情
-  url: null
-- category: 财经
-  hashid: VaobPqqdAj
-  name: 财联社
-  url: null
-- category: 财经
-  hashid: 3QeLwYGd7k
-  name: 雪球
-  url: null
-- category: 财经
-  hashid: m4ejJprexE
-  name: 金融界
-  url: null
-- category: 综合
-  hashid: wWmoO5Rd4E
-  name: 澎湃
-  url: null
-- category: 综合
-  hashid: KMZd7VOvrO
-  name: 知乎日报
-  url: null
-- category: 综合
-  hashid: n6YoVqDeZa
-  name: 夸克
-  url: null
-- category: 综合
-  hashid: Jb0vmwGeB1
-  name: 新浪国内新闻
+- category: 测试
+  hashid: test456
+  name: 测试源2
   url: null
 status:
   current_status: success

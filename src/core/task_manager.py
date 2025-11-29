@@ -216,6 +216,7 @@ class TaskManager:
         if 'scene' in updates:
             task_data['scene'] = updates['scene']
         if 'sources' in updates:
+            logger.info(f"Updating sources for task {name}: {len(updates['sources'])} sources")
             task_data['sources'] = updates['sources']
         if 'schedule' in updates:
             # 深度合并 schedule

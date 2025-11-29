@@ -30,7 +30,17 @@ export default function SourceSelector({ selectedSources, onChange, className = 
     const loadSources = async () => {
         try {
             const response = await sourcesAPI.list()
-            setSources(response.data || [])
+            const allSources = response.data || []
+
+            // 去重：使用 Map 来确保每个 hashid 只出现一次
+            const uniqueSourcesMap = new Map()
+            allSources.forEach((source: Source) => {
+                if (!uniqueSourcesMap.has(source.hashid)) {
+                    uniqueSourcesMap.set(source.hashid, source)
+                }
+            })
+
+            setSources(Array.from(uniqueSourcesMap.values()))
         } catch (err) {
             console.error('Failed to load sources:', err)
             setError('Failed to load sources')
@@ -48,8 +58,7 @@ export default function SourceSelector({ selectedSources, onChange, className = 
 
     const handleRecommend = async () => {
         if (!scene) {
-            alert('Please enter a scene description first.')
-            return
+            return  // Silently return if no scene
         }
         setRecommending(true)
         try {
@@ -60,11 +69,8 @@ export default function SourceSelector({ selectedSources, onChange, className = 
             // Merge with existing selection
             const newSelection = Array.from(new Set([...selectedSources, ...recommendedIds]))
             onChange(newSelection)
-
-            alert(`✨ AI recommended ${recommended.length} sources for "${scene}"`)
         } catch (err) {
             console.error('Recommendation failed:', err)
-            alert('AI recommendation failed')
         } finally {
             setRecommending(false)
         }
@@ -84,6 +90,17 @@ export default function SourceSelector({ selectedSources, onChange, className = 
         return acc
     }, {} as Record<string, Source[]>)
 
+    // Sort sources within each category: selected first, then unselected
+    Object.keys(groupedSources).forEach(category => {
+        groupedSources[category].sort((a, b) => {
+            const aSelected = selectedSources.includes(a.hashid)
+            const bSelected = selectedSources.includes(b.hashid)
+            if (aSelected && !bSelected) return -1
+            if (!aSelected && bSelected) return 1
+            return 0
+        })
+    })
+
     if (loading) return <div className="source-selector-loading">Loading sources...</div>
     if (error) return <div className="source-selector-error">{error}</div>
 
@@ -101,12 +118,13 @@ export default function SourceSelector({ selectedSources, onChange, className = 
                 </div>
                 {scene && (
                     <button
-                        className="btn btn-sm btn-outline ai-recommend-btn"
+                        className="btn btn-secondary ai-recommend-btn"
                         onClick={handleRecommend}
-                        disabled={recommending}
-                        title={`Recommend sources for scene: ${scene}`}
+                        disabled={!scene || recommending}
+                        title="AI 推荐新闻源"
                     >
-                        {recommending ? 'Thinking...' : '✨ AI Recommend'}
+                        <span className="btn-icon">✨</span>
+                        <span className="btn-text">{recommending ? 'AI 推荐中...' : 'AI 推荐'}</span>
                     </button>
                 )}
             </div>

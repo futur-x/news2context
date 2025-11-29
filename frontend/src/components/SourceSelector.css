@@ -126,3 +126,23 @@
 .source-selector-error {
     color: var(--color-accent-error);
 }
+/* AI Recommend Button */
+.ai-recommend-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    white-space: nowrap;
+}
+
+.ai-recommend-btn .btn-icon {
+    font-size: var(--text-lg);
+}
+
+.ai-recommend-btn .btn-text {
+    font-weight: 500;
+}
+
+.ai-recommend-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
