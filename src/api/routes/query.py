@@ -15,9 +15,25 @@ async def search_news(request: SearchRequest):
     """语义搜索新闻"""
     config = get_config()
     task_manager = TaskManager()
+    
+    # 获取 Embedding API Key（优先使用 embedding.api_key，否则使用 llm.api_key）
+    embedding_api_key = config.get('embedding.api_key') or config.get('llm.api_key')
+    headers = {}
+    if embedding_api_key:
+        headers["X-OpenAI-Api-Key"] = embedding_api_key
+    
+    # 准备 embedding 配置
+    embedding_config = {
+        'model': config.get('embedding.model', 'text-embedding-3-small'),
+        'base_url': config.get('embedding.base_url', 'https://litellm.futurx.cc'),
+        'dimensions': config.get('embedding.dimensions', 1536)
+    }
+    
     collection_manager = CollectionManager(
         weaviate_url=config.get('weaviate.url'),
-        api_key=config.get('weaviate.api_key')
+        api_key=config.get('weaviate.api_key'),
+        additional_headers=headers,
+        embedding_config=embedding_config
     )
     
     all_results = []
@@ -83,7 +99,7 @@ async def search_news(request: SearchRequest):
                     url=url,
                     source_name=source_name,
                     published_at=published_at,
-                    score=item.get('_additional', {}).get('certainty'),
+                    score=item.get('_additional', {}).get('score'),  # 使用 score 而不是 certainty
                     task_name=item.get('task_name')
                 )
                 all_results.append(news_item)
