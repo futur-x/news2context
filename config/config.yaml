@@ -1,89 +1,65 @@
-# News2Context v2.0 配置文件
-
-# ==================== LLM 配置 ====================
-llm:
-  provider: openai              # openai, anthropic, azure, local
-  api_key: ""                   # 从环境变量读取: OPENAI_API_KEY
+api:
+  cors_origins:
+  - '*'
+  host: 0.0.0.0
+  port: 8000
+embedding:
+  api_key: sk-tptTrlFHR14EDpg
   base_url: https://litellm.futurx.cc
-  model: aws-claude-haiku-4.5   # Claude Haiku 4.5
-  temperature: 0.7
+  dimensions: 1536
+  model: text-embedding-3-small
+extractor:
+  max_concurrent: 3
+  timeout: 60
+  user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/120.0.0.0 Safari/537.36
+llm:
+  api_key: sk-tptTrlFHR14EDpg
+  base_url: https://litellm.futurx.cc
   max_tokens: 2000
-
-# ==================== 新闻源引擎配置 ====================
+  model: aws-claude-haiku-4.5
+  provider: openai
+  temperature: 0.7
+logging:
+  file: logs/news2context.log
+  format: json
+  level: INFO
 news_sources:
-  # 当前激活的引擎
   active_engine: tophub
-  
-  # 采集器配置
   collector:
-    max_news_per_source: 15  # 每个源最多采集的新闻数量
-    early_stop_threshold: 3  # 连续失败多少次后跳过该源
-
-  # 各引擎配置
+    early_stop_threshold: 3
+    max_news_per_source: 15
   engines:
-    # TopHub 引擎
-    tophub:
-      enabled: true
-      api_key: ""               # 从环境变量读取: TOPHUB_API_KEY
-      base_url: https://api.tophubdata.com
-      timeout: 30
-      max_retries: 3
-      # 可选：允许的新闻源白名单（留空则允许所有）
-      allowed_sources: []
-    
-    # NewsAPI 引擎（预留）
-    newsapi:
-      enabled: false
-      api_key: ""
-      base_url: https://newsapi.org/v2
-      country: cn
-      language: zh
-    
-    # 自定义 RSS 引擎（预留）
     custom_rss:
       enabled: false
       feeds: []
-
-# ==================== Weaviate 配置 ====================
+    newsapi:
+      api_key: ''
+      base_url: https://newsapi.org/v2
+      country: cn
+      enabled: false
+      language: zh
+    tophub:
+      allowed_sources: []
+      api_key: c8ce9ff0475a1a8aa21fac6d81dc6043
+      base_url: https://api.tophubdata.com
+      enabled: true
+      max_retries: 3
+      timeout: 30
 weaviate:
-  url: http://localhost:8080
-  api_key: ""                   # 可选
-  
-  # Chunk 切割配置
-  chunking:
-    enabled: true               # 启用智能切割
-    max_chunk_size: 3000        # 每个 chunk 最大字符数
-    split_by_heading: true      # 按标题边界切割
-    heading_level: 4            # 切割的标题级别（#### = 4）
-    
-  # 批量插入配置
+  api_key: ''
   batch:
-    size: 5                     # 每批 5 个（降低并发压力）
-    dynamic: true               # 动态调整
-    timeout_retries: 3          # 重试次数
-    
-  # 搜索配置
+    dynamic: true
+    size: 5
+    timeout_retries: 3
+  chunking:
+    enabled: true
+    heading_level: 4
+    max_chunk_size: 3000
+    split_by_heading: true
   search:
-    type: hybrid                # hybrid, semantic, keyword
-    hybrid_alpha: 0.5           # 0.5 = 50% 语义 + 50% 关键词（平衡）
-    similarity_threshold: 0.3   # 降低阈值，返回更多结果
-    max_results: 5              # 返回 TOP 5 结果
-  
-# ==================== API 服务配置 ====================
-api:
-  host: 0.0.0.0
-  port: 8000
-  cors_origins:
-    - "*"
-
-# ==================== 内容提取配置 ====================
-extractor:
-  timeout: 60
-  max_concurrent: 3
-  user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-
-# ==================== 日志配置 ====================
-logging:
-  level: INFO
-  format: "json"
-  file: logs/news2context.log
+    hybrid_alpha: 0.5
+    max_results: 5
+    similarity_threshold: 0.3
+    type: hybrid
+  url: http://localhost:8080

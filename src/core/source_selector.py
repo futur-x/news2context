@@ -115,6 +115,9 @@ class SourceSelector:
                 hashid = rec.get('hashid')
                 if hashid in hashid_to_source:
                     source = hashid_to_source[hashid].copy()
+                    # 确保 hashid 字段存在
+                    if 'hashid' not in source:
+                        source['hashid'] = source.get('id')
                     source['recommendation_reason'] = rec.get('reason', '')
                     source['priority'] = rec.get('priority', '中')
                     selected_sources.append(source)

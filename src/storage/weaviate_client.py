@@ -183,16 +183,36 @@ class CollectionManager:
         ]
     }
     
-    def __init__(self, weaviate_url: str, api_key: Optional[str] = None):
+    
+    def __init__(self, weaviate_url: str, api_key: Optional[str] = None, additional_headers: Optional[Dict[str, str]] = None, embedding_config: Optional[Dict[str, Any]] = None):
         """
         初始化 Collection 管理器
         
         Args:
             weaviate_url: Weaviate 服务地址
             api_key: API Key（可选）
+            additional_headers: 额外请求头（如 X-OpenAI-Api-Key）
+            embedding_config: Embedding 模型配置（包含 model, base_url 等）
         """
         self.weaviate_url = weaviate_url
         self.api_key = api_key
+        self.embedding_config = embedding_config or {}
+        
+        # 动态更新 NEWS_CHUNK_SCHEMA 的 embedding 模型配置
+        if self.embedding_config:
+            embedding_model = self.embedding_config.get('model', 'text-embedding-3-small')
+            embedding_base_url = self.embedding_config.get('base_url', 'https://litellm.futurx.cc')
+            
+            # 更新 schema（创建副本以避免修改类变量）
+            self.NEWS_CHUNK_SCHEMA = self.NEWS_CHUNK_SCHEMA.copy()
+            self.NEWS_CHUNK_SCHEMA['moduleConfig'] = {
+                "text2vec-openai": {
+                    "model": embedding_model,
+                    "type": "text",
+                    "baseURL": embedding_base_url
+                }
+            }
+            logger.info(f"使用 Embedding 模型: {embedding_model}")
         
         # 创建客户端（增加启动超时时间）
         if api_key:
@@ -200,12 +220,14 @@ class CollectionManager:
             self.client = weaviate.Client(
                 url=weaviate_url,
                 auth_client_secret=auth_config,
-                startup_period=30  # 增加启动超时到 30 秒
+                startup_period=30,  # 增加启动超时到 30 秒
+                additional_headers=additional_headers
             )
         else:
             self.client = weaviate.Client(
                 url=weaviate_url,
-                startup_period=30  # 增加启动超时到 30 秒
+                startup_period=30,  # 增加启动超时到 30 秒
+                additional_headers=additional_headers
             )
         
         # 测试连接
@@ -217,6 +239,7 @@ class CollectionManager:
     def _format_class_name(self, name: str) -> str:
         """
         确保 Collection 名称符合 Weaviate 规范（首字母大写）
+        如果名称包含非 ASCII 字符（如中文），则使用 MD5 哈希生成合法名称
         
         Args:
             name: 原始名称
@@ -225,13 +248,28 @@ class CollectionManager:
             格式化后的名称
         """
         if not name:
-            return name
+            raise ValueError("Collection 名称不能为空")
+            
         # 移除不支持的字符（Weaviate 只允许字母、数字和下划线）
         import re
+        import hashlib
+        
+        # 尝试保留原始英文名称
         clean_name = re.sub(r'[^a-zA-Z0-9_]', '', name)
-        if not clean_name:
-            raise ValueError(f"无效的 Collection 名称: {name}")
+        
+        # 如果清理后为空（例如全是中文），或者长度太短，使用 MD5
+        if not clean_name or len(clean_name) < 2:
+            # 使用 MD5 生成唯一标识
+            hash_object = hashlib.md5(name.encode())
+            hash_hex = hash_object.hexdigest()
+            # 添加前缀确保首字母大写
+            return f"Class_{hash_hex}"
             
+        # 如果以数字或下划线开头，添加前缀
+        if not clean_name[0].isalpha():
+            clean_name = f"Class_{clean_name}"
+            
+        # 确保首字母大写
         return clean_name[0].upper() + clean_name[1:]
 
     def create_collection(self, collection_name: str, schema: Dict[str, Any] = None) -> bool:
@@ -588,15 +626,25 @@ class CollectionManager:
         success_count = 0
         failed_count = 0
         
+        # 定义错误回调
+        errors = []
+        def check_batch_result(results):
+            if results is not None:
+                for result in results:
+                    if 'result' in result and 'errors' in result['result']:
+                        if 'error' in result['result']['errors']:
+                            err_msg = result['result']['errors']['error']
+                            errors.append(err_msg)
+                            logger.error(f"Weaviate Batch Error: {err_msg}")
+
+        # 配置 Batch
+        self.client.batch.configure(
+            batch_size=batch_size,
+            callback=check_batch_result,
+            num_workers=2
+        )
+
         try:
-            # 配置批量插入
-            self.client.batch.configure(
-                batch_size=batch_size,
-                dynamic=True,
-                timeout_retries=3,
-                callback=None
-            )
-            
             with self.client.batch as batch:
                 for idx, chunk in enumerate(chunks, 1):
                     try:
@@ -610,13 +658,19 @@ class CollectionManager:
                         failed_count += 1
                         logger.error(f"添加 chunk #{idx} 失败: {str(e)}")
             
-            logger.success(f"批量插入完成: 成功 {success_count}, 失败 {failed_count}, 总计 {len(chunks)}")
+            # 检查是否有回调捕获的错误
+            if errors:
+                logger.error(f"批量插入存在 {len(errors)} 个错误")
+                # 调整成功计数（虽然不太准确，因为 success_count 只是提交数）
+                failed_count += len(errors)
+                success_count -= len(errors)
+
+            logger.success(f"批量插入完成: 提交 {len(chunks)}, 成功 {success_count}, 失败 {failed_count}")
             return success_count
         
         except Exception as e:
             logger.error(f"批量插入失败: {str(e)}")
-            logger.error(f"已处理: {success_count}, 失败: {failed_count}")
-            return success_count
+            return 0
 
     def get_existing_urls(self, collection_name: str, task_name: str) -> Set[str]:
         """

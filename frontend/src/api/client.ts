@@ -23,7 +23,9 @@ export const settingsAPI = {
     getSystem: () => api.get('/settings/system'),
     updateSystem: (data: any) => api.put('/settings/system', data),
     getTopHub: () => api.get('/settings/engines/tophub'),
-    updateTopHub: (data: any) => api.put('/settings/engines/tophub', data)
+    updateTopHub: (data: any) => api.put('/settings/engines/tophub', data),
+    getEmbedding: () => api.get('/settings/embedding'),
+    updateEmbedding: (data: any) => api.put('/settings/embedding', data)
 }
 
 // External API

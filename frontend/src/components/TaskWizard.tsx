@@ -77,11 +77,11 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
         }
     }
 
-    const handleRemoveRecommended = (hashid: string) => {
+    const handleRemoveRecommended = (hashidToRemove: string) => {
         setWizardData({
             ...wizardData,
-            recommendedSources: wizardData.recommendedSources.filter(s => s.hashid !== hashid),
-            sources: wizardData.sources.filter(id => id !== hashid)
+            recommendedSources: wizardData.recommendedSources.filter(s => (s.hashid || s.id) !== hashidToRemove),
+            sources: wizardData.sources.filter(id => id !== hashidToRemove)
         })
     }
 
@@ -92,12 +92,20 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
             const allSourcesRes = await sourcesAPI.list()
             const allSources = allSourcesRes.data || []
 
-            const selectedSourceObjects = allSources
-                .filter((s: any) => wizardData.sources.includes(s.hashid))
+            // Combine all available sources (saved + recommended)
+            const availableSources = [...allSources, ...wizardData.recommendedSources]
+
+            // Deduplicate
+            const uniqueSourcesMap = new Map(availableSources.map((s: any) => [s.hashid, s]))
+
+            const selectedSourceObjects = wizardData.sources
+                .map(id => uniqueSourcesMap.get(id))
+                .filter(s => s) // Filter out undefined
                 .map((s: any) => ({
                     name: s.name,
-                    hashid: s.hashid,
-                    category: s.category
+                    hashid: s.hashid || s.id,
+                    category: s.category,
+                    url: s.url
                 }))
 
             await taskAPI.create({
@@ -298,6 +306,7 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
 
                 <div className="wizard-footer">
                     <button
+                        type="button"
                         className="btn btn-secondary"
                         onClick={step === 1 ? onClose : handleBack}
                         disabled={loading}
@@ -305,6 +314,7 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
                         {step === 1 ? 'Cancel' : 'Back'}
                     </button>
                     <button
+                        type="button"
                         className="btn btn-primary"
                         onClick={handleNext}
                         disabled={loading}

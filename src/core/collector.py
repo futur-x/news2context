@@ -24,9 +24,25 @@ class NewsCollector:
     def __init__(self):
         self.config = get_config()
         self.task_manager = TaskManager()
+        
+        # 获取 Embedding API Key（优先使用 embedding.api_key，否则使用 llm.api_key）
+        embedding_api_key = self.config.get('embedding.api_key') or self.config.get('llm.api_key')
+        headers = {}
+        if embedding_api_key:
+            headers["X-OpenAI-Api-Key"] = embedding_api_key
+        
+        # 准备 embedding 配置
+        embedding_config = {
+            'model': self.config.get('embedding.model', 'text-embedding-3-small'),
+            'base_url': self.config.get('embedding.base_url', 'https://litellm.futurx.cc'),
+            'dimensions': self.config.get('embedding.dimensions', 1536)
+        }
+            
         self.collection_manager = CollectionManager(
             weaviate_url=self.config.get('weaviate.url'),
-            api_key=self.config.get('weaviate.api_key')
+            api_key=self.config.get('weaviate.api_key'),
+            additional_headers=headers,
+            embedding_config=embedding_config
         )
         self.engine = EngineFactory.create_engine(self.config.config)
         self.extractor = ContentExtractor()
@@ -73,11 +89,31 @@ class NewsCollector:
         logger.info(f"开始采集最新新闻（共 {len(task.sources)} 个源）")
         
         async with aiohttp.ClientSession() as session:
-            for source in task.sources:
+            for i, source in enumerate(task.sources):
                 source_name = source['name']
                 source_stats[source_name] = {'total': 0, 'success': 0, 'failed': 0, 'skipped': 0}
                 
+                # 更新进度
+                progress = {
+                    'current_source': source_name,
+                    'processed_sources': i,
+                    'total_sources': len(task.sources),
+                    'collected_articles': len(all_news_items),
+                    'status': 'collecting'
+                }
+                self.task_manager.update_task_status(task_name, {'progress': progress})
+                
                 try:
+                    # 更新进度
+                    progress = {
+                        'current_source': source_name,
+                        'processed_sources': i,
+                        'total_sources': len(task.sources),
+                        'collected_articles': len(all_news_items),
+                        'status': 'collecting'
+                    }
+                    self.task_manager.update_task_status(task_name, {'progress': progress})
+                    
                     # 获取最新新闻列表
                     news_items = await self.engine.fetch_news(source['hashid'])
                     

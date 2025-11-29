@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from loguru import logger
+import uuid
 
 
 class TaskConfig:
@@ -299,13 +300,14 @@ class TaskManager:
     def _generate_collection_name(self, task_name: str) -> str:
         """
         生成 Weaviate Collection 名称
+        使用 UUID 确保唯一性和合规性 (Task_<uuid>)
         
         Args:
-            task_name: 任务名称
+            task_name: 任务名称 (仅用于记录，不用于生成 ID)
             
         Returns:
-            Collection 名称（首字母大写）
+            Collection 名称
         """
-        # 移除特殊字符，转换为小写，然后首字母大写
-        clean_name = task_name.replace('-', '_').replace(' ', '_').lower()
-        return f"{clean_name.capitalize()}_db"
+        # 生成唯一 ID
+        unique_id = uuid.uuid4().hex
+        return f"Task_{unique_id}"

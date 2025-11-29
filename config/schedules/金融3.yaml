@@ -1,0 +1,65 @@
+created_at: '2025-11-29T08:14:05.120446'
+engine:
+  name: tophub
+locked: true
+name: 金融3
+scene: 金融新闻
+schedule:
+  cron: 0 8 * * *
+  custom_range:
+    end: null
+    start: null
+  date_range: last_1_days
+sources:
+- category: 财经
+  hashid: 0MdKam4ow1
+  name: 第一财经
+  url: null
+- category: 财经
+  hashid: rx9ozj7oXb
+  name: 新浪财经新闻
+  url: null
+- category: 财经
+  hashid: x9ozBY7oXb
+  name: 财新网
+  url: null
+- category: 财经
+  hashid: G2me3ndwjq
+  name: 华尔街见闻
+  url: null
+- category: 财经
+  hashid: 3QeLGVPd7k
+  name: 财新网
+  url: null
+- category: 财经
+  hashid: RrvWOwRv5z
+  name: 雪球
+  url: null
+- category: 财经
+  hashid: qndg5MpoLl
+  name: 财联社
+  url: null
+- category: 财经
+  hashid: wkvlN2Pez1
+  name: 金色财经
+  url: null
+- category: 财经
+  hashid: YqoXzxqdOD
+  name: 英为财情
+  url: null
+- category: 财经
+  hashid: 3QeLgrPd7k
+  name: 证券日报网
+  url: null
+status:
+  current_status: success
+  enabled: true
+  last_error: null
+  last_run: '2025-11-29T08:16:05.039910'
+  last_success_count: 0
+  next_run: null
+  progress: null
+  running: false
+  total_runs: 1
+weaviate:
+  collection: 金融3_db

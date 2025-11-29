@@ -46,10 +46,25 @@ async def browse_knowledge_base(
     # 获取知识库内容
     config = get_config()
     
+    # 获取 Embedding API Key（优先使用 embedding.api_key，否则使用 llm.api_key）
+    embedding_api_key = config.get('embedding.api_key') or config.get('llm.api_key')
+    headers = {}
+    if embedding_api_key:
+        headers["X-OpenAI-Api-Key"] = embedding_api_key
+    
+    # 准备 embedding 配置
+    embedding_config = {
+        'model': config.get('embedding.model', 'text-embedding-3-small'),
+        'base_url': config.get('embedding.base_url', 'https://litellm.futurx.cc'),
+        'dimensions': config.get('embedding.dimensions', 1536)
+    }
+    
     try:
         collection_manager = CollectionManager(
             weaviate_url=config.get('weaviate.url'),
-            api_key=config.get('weaviate.api_key')
+            api_key=config.get('weaviate.api_key'),
+            additional_headers=headers,
+            embedding_config=embedding_config
         )
     except Exception as e:
         # 如果连接失败，返回空列表而不是 500 错误
@@ -63,11 +78,15 @@ async def browse_knowledge_base(
     
     try:
         # 查询所有内容
-        # 尝试查询 NewsChunk 字段
+        # 只查询 NewsChunk Schema 中实际存在的字段
         properties = [
             "content", 
-            "article_titles", "sources", "article_urls", "created_at",  # Chunk schema
-            "title", "source_name", "url", "published_at"  # Article schema (fallback)
+            "article_titles",
+            "sources",
+            "article_urls",
+            "created_at",
+            "task_name",
+            "categories"
         ]
         
         response = collection_manager.client.query.get(

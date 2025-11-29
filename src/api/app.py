@@ -2,12 +2,19 @@
 FastAPI 应用入口
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+from src.utils.logger import setup_logger
 from src.api.routes import health, tasks, query, settings, external, chat, browse, sources
 
 def create_app() -> FastAPI:
     """创建并配置 FastAPI 应用"""
+    # 初始化日志
+    setup_logger()
+    
     app = FastAPI(
         title="News2Context API",
         description="AI 驱动的新闻聚合系统 API",
@@ -36,6 +43,18 @@ def create_app() -> FastAPI:
     return app
 
 app = create_app()
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error(f"Validation Error: {exc.errors()}")
+    logger.error(f"Request Body: {body.decode()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": body.decode()},
+    )
+
+
 
 if __name__ == "__main__":
     import uvicorn

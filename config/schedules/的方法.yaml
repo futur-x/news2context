@@ -1,0 +1,65 @@
+created_at: '2025-11-29T08:05:03.666620'
+engine:
+  name: tophub
+locked: true
+name: 的方法
+scene: 金融
+schedule:
+  cron: 0 8 * * *
+  custom_range:
+    end: null
+    start: null
+  date_range: last_1_days
+sources:
+- category: 财经
+  hashid: 0MdKam4ow1
+  name: 第一财经
+  url: null
+- category: 财经
+  hashid: rx9ozj7oXb
+  name: 新浪财经新闻
+  url: null
+- category: 财经
+  hashid: x9ozBY7oXb
+  name: 财新网
+  url: null
+- category: 财经
+  hashid: X12owXzvNV
+  name: 雪球
+  url: null
+- category: 财经
+  hashid: G2me3ndwjq
+  name: 华尔街见闻
+  url: null
+- category: 财经
+  hashid: 3QeLGVPd7k
+  name: 财新网
+  url: null
+- category: 财经
+  hashid: qndg5MpoLl
+  name: 财联社
+  url: null
+- category: 财经
+  hashid: KGoRk0xvl6
+  name: 新华网
+  url: null
+- category: 财经
+  hashid: m4ejJprexE
+  name: 金融界
+  url: null
+- category: 电子报
+  hashid: qndggymdLl
+  name: 第一财经日报
+  url: null
+status:
+  current_status: success
+  enabled: true
+  last_error: null
+  last_run: '2025-11-29T08:18:58.683939'
+  last_success_count: 0
+  next_run: null
+  progress: null
+  running: false
+  total_runs: 2
+weaviate:
+  collection: 的方法_db

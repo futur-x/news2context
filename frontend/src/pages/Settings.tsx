@@ -17,6 +17,13 @@ function Settings() {
         tophub_base_url: ''
     })
 
+    const [embeddingSettings, setEmbeddingSettings] = useState({
+        model: '',
+        api_key: '',
+        base_url: '',
+        dimensions: 1536
+    })
+
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -25,12 +32,14 @@ function Settings() {
 
     const loadSettings = async () => {
         try {
-            const [systemRes, topHubRes] = await Promise.all([
+            const [systemRes, topHubRes, embeddingRes] = await Promise.all([
                 settingsAPI.getSystem(),
-                settingsAPI.getTopHub()
+                settingsAPI.getTopHub(),
+                settingsAPI.getEmbedding()
             ])
             setSystemSettings(systemRes.data)
             setTopHubSettings(topHubRes.data)
+            setEmbeddingSettings(embeddingRes.data)
         } catch (error) {
             console.error('Failed to load settings:', error)
         } finally {
@@ -54,6 +63,16 @@ function Settings() {
             alert('TopHub settings saved successfully')
         } catch (error) {
             console.error('Failed to save TopHub settings:', error)
+            alert('Failed to save settings')
+        }
+    }
+
+    const handleSaveEmbedding = async () => {
+        try {
+            await settingsAPI.updateEmbedding(embeddingSettings)
+            alert('Embedding settings saved successfully')
+        } catch (error) {
+            console.error('Failed to save embedding settings:', error)
             alert('Failed to save settings')
         }
     }
@@ -108,6 +127,53 @@ function Settings() {
                     </div>
                     <button className="btn btn-primary" onClick={handleSaveSystem}>
                         Save System Settings
+                    </button>
+                </div>
+
+                <div className="settings-section">
+                    <h2 className="section-title">Embedding Model</h2>
+                    <div className="form-group">
+                        <label>Model</label>
+                        <select
+                            value={embeddingSettings.model}
+                            onChange={(e) => setEmbeddingSettings({ ...embeddingSettings, model: e.target.value })}
+                            className="input"
+                        >
+                            <option value="text-embedding-3-small">text-embedding-3-small (8191 tokens)</option>
+                            <option value="text-embedding-3-large">text-embedding-3-large (8191 tokens)</option>
+                            <option value="text-embedding-ada-002">text-embedding-ada-002 (8191 tokens)</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>API Key</label>
+                        <input
+                            type="password"
+                            value={embeddingSettings.api_key}
+                            onChange={(e) => setEmbeddingSettings({ ...embeddingSettings, api_key: e.target.value })}
+                            className="input"
+                            placeholder="Leave empty to use LLM API Key"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Base URL</label>
+                        <input
+                            type="text"
+                            value={embeddingSettings.base_url}
+                            onChange={(e) => setEmbeddingSettings({ ...embeddingSettings, base_url: e.target.value })}
+                            className="input"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Dimensions</label>
+                        <input
+                            type="number"
+                            value={embeddingSettings.dimensions}
+                            onChange={(e) => setEmbeddingSettings({ ...embeddingSettings, dimensions: parseInt(e.target.value) })}
+                            className="input"
+                        />
+                    </div>
+                    <button className="btn btn-primary" onClick={handleSaveEmbedding}>
+                        Save Embedding Settings
                     </button>
                 </div>
 

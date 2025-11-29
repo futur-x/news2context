@@ -25,6 +25,13 @@ class EngineSettings(BaseModel):
     tophub_api_key: str
     tophub_base_url: str
 
+class EmbeddingSettings(BaseModel):
+    """Embedding 模型配置"""
+    model: str
+    api_key: str
+    base_url: str
+    dimensions: Optional[int] = 1536
+
 # --- 路由定义 ---
 
 @router.get("/settings/system", response_model=SystemSettings)
@@ -83,5 +90,32 @@ async def update_tophub_settings(settings: EngineSettings):
     try:
         config.save()
         return {"success": True, "message": "TopHub 配置已更新"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save config: {str(e)}")
+
+@router.get("/settings/embedding", response_model=EmbeddingSettings)
+async def get_embedding_settings():
+    """获取 Embedding 模型配置"""
+    config = get_config()
+    return EmbeddingSettings(
+        model=config.get('embedding.model', 'text-embedding-3-small'),
+        api_key=config.get('embedding.api_key', ''),
+        base_url=config.get('embedding.base_url', 'https://litellm.futurx.cc'),
+        dimensions=config.get('embedding.dimensions', 1536)
+    )
+
+@router.put("/settings/embedding")
+async def update_embedding_settings(settings: EmbeddingSettings):
+    """更新 Embedding 模型配置"""
+    config = get_config()
+    
+    config.set('embedding.model', settings.model)
+    config.set('embedding.api_key', settings.api_key)
+    config.set('embedding.base_url', settings.base_url)
+    config.set('embedding.dimensions', settings.dimensions)
+    
+    try:
+        config.save()
+        return {"success": True, "message": "Embedding 配置已更新"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save config: {str(e)}")

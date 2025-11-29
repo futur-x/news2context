@@ -1,0 +1,65 @@
+created_at: '2025-11-29T08:23:16.540875'
+engine:
+  name: tophub
+locked: true
+name: 你好啊33
+scene: 国际新闻
+schedule:
+  cron: 0 8 * * *
+  custom_range:
+    end: null
+    start: null
+  date_range: last_1_days
+sources:
+- category: 综合
+  hashid: qndg1WxoLl
+  name: CCTV央视新闻
+  url: null
+- category: 综合
+  hashid: 3adqR13eng
+  name: China Daily
+  url: null
+- category: 综合
+  hashid: RrvWOl3v5z
+  name: 观察者网
+  url: null
+- category: 综合
+  hashid: qYwv48MvPa
+  name: FT中文网
+  url: null
+- category: 综合
+  hashid: WYKd6LmoaP
+  name: FT中文网
+  url: null
+- category: 财经
+  hashid: x9ozBY7oXb
+  name: 财新网
+  url: null
+- category: 财经
+  hashid: 3QeLXl9e7k
+  name: 日经中文网
+  url: null
+- category: 综合
+  hashid: pQvNXgmeNE
+  name: 南方周末
+  url: null
+- category: 综合
+  hashid: mproPq5vq6
+  name: 新浪社会新闻
+  url: null
+- category: 科技
+  hashid: Y3QeLMPo7k
+  name: Readhub
+  url: null
+status:
+  current_status: success
+  enabled: true
+  last_error: null
+  last_run: '2025-11-29T10:00:16.960952'
+  last_success_count: 69
+  next_run: null
+  progress: null
+  running: false
+  total_runs: 4
+weaviate:
+  collection: Task_82aab2f9a7f2492ca887b5b54f291f7a

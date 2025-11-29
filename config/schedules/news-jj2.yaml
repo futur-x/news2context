@@ -92,10 +92,14 @@ sources:
   hashid: mproPpoq6O
   name: 知乎
 status:
+  current_status: error
   enabled: true
-  last_error: null
+  last_error: TaskManager.update_task_status() got an unexpected keyword argument
+    'last_run'
   last_run: '2025-11-27T18:06:18.259487'
   next_run: null
+  progress: null
+  running: false
   total_runs: 3
 weaviate:
   collection: News_jj2_db
