@@ -541,6 +541,28 @@ class CollectionManager:
             logger.error(f"搜索失败: {str(e)}")
             return []
     
+    def delete_item(self, collection_name: str, item_id: str) -> bool:
+        """
+        删除指定的项目
+        
+        Args:
+            collection_name: Collection 名称
+            item_id: 项目的 UUID
+            
+        Returns:
+            是否删除成功
+        """
+        try:
+            self.client.data_object.delete(
+                uuid=item_id,
+                class_name=collection_name
+            )
+            logger.info(f"Deleted item {item_id} from {collection_name}")
+            return True
+        except Exception as e:
+            logger.error(f"Delete item error: {e}")
+            return False
+    
     def hybrid_search(
         self,
         collection_name: str,

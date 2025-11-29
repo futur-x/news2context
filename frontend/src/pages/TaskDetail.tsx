@@ -39,6 +39,10 @@ function TaskDetail() {
     const [kbPage, setKbPage] = useState(1)
     const [kbTotal, setKbTotal] = useState(0)
     const kbPageSize = 24  // 每页显示 24 条（4列 × 6行）
+    const [selectedKbItem, setSelectedKbItem] = useState<any>(null)
+    const [showKbDetailModal, setShowKbDetailModal] = useState(false)
+    const [itemToDelete, setItemToDelete] = useState<any>(null)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
     // Source management state
     const [showAddSourceModal, setShowAddSourceModal] = useState(false)
@@ -98,6 +102,39 @@ function TaskDetail() {
         } finally {
             setLoadingKb(false)
         }
+    }
+
+    const handleDeleteClick = (item: any, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setItemToDelete(item)
+        setShowDeleteConfirm(true)
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!itemToDelete) return
+
+        try {
+            await api.delete(`/tasks/${taskName}/items/${itemToDelete.id}`)
+            setShowDeleteConfirm(false)
+            setItemToDelete(null)
+            // 删除后刷新列表
+            await loadKnowledgeBase(kbPage)
+        } catch (error) {
+            console.error('Failed to delete item:', error)
+            alert('删除失败')
+            setShowDeleteConfirm(false)
+            setItemToDelete(null)
+        }
+    }
+
+    const handleCancelDelete = () => {
+        setShowDeleteConfirm(false)
+        setItemToDelete(null)
+    }
+
+    const handleViewKbItem = (item: any) => {
+        setSelectedKbItem(item)
+        setShowKbDetailModal(true)
     }
 
     const loadTaskStatus = async () => {
@@ -396,7 +433,14 @@ function TaskDetail() {
                         <>
                             <div className="kb-content-grid">
                                 {kbContent.map((item, idx) => (
-                                    <div key={idx} className="kb-card">
+                                    <div key={idx} className="kb-card" onClick={() => handleViewKbItem(item)}>
+                                        <button
+                                            className="kb-card-delete"
+                                            onClick={(e) => handleDeleteClick(item, e)}
+                                            title="删除"
+                                        >
+                                            ×
+                                        </button>
                                         <h4 className="kb-card-title">{item.title}</h4>
                                         <div className="kb-card-content">
                                             {item.content?.substring(0, 150)}...
@@ -657,6 +701,66 @@ function TaskDetail() {
                     </div>
                 )}
             </div>
+
+            {/* Knowledge Base Item Detail Modal */}
+            {showKbDetailModal && selectedKbItem && (
+                <div className="modal-overlay" onClick={() => setShowKbDetailModal(false)}>
+                    <div className="modal-content kb-detail-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>{selectedKbItem.title}</h2>
+                            <button className="modal-close" onClick={() => setShowKbDetailModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="kb-detail-meta">
+                                <span className="kb-detail-source">📰 {selectedKbItem.source_name}</span>
+                                {selectedKbItem.published_at && (
+                                    <span className="kb-detail-date">📅 {new Date(selectedKbItem.published_at).toLocaleString()}</span>
+                                )}
+                            </div>
+                            <div className="kb-detail-content">
+                                {selectedKbItem.content}
+                            </div>
+                            {selectedKbItem.url && (
+                                <div className="kb-detail-actions">
+                                    <a href={selectedKbItem.url} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                                        查看原文 →
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && itemToDelete && (
+                <div className="modal-overlay" onClick={handleCancelDelete}>
+                    <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>确认删除</h2>
+                            <button className="modal-close" onClick={handleCancelDelete}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <p>确定要删除以下内容吗？</p>
+                            <div className="delete-item-preview">
+                                <strong>{itemToDelete.title}</strong>
+                                <div className="delete-item-meta">
+                                    <span>📰 {itemToDelete.source_name}</span>
+                                </div>
+                            </div>
+                            <p className="delete-warning">此操作无法撤销</p>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={handleCancelDelete}>
+                                取消
+                            </button>
+                            <button className="btn btn-danger" onClick={handleConfirmDelete}>
+                                确认删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

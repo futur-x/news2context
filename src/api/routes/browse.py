@@ -76,8 +76,17 @@ async def browse_knowledge_base(
             success=False
         )
     
+    
     try:
-        # 查询所有内容
+        # 首先获取总数量（不分页）
+        count_response = collection_manager.client.query.aggregate(task.collection_name).with_meta_count().do()
+        total_count = 0
+        if 'data' in count_response and 'Aggregate' in count_response['data']:
+            aggregate_data = count_response['data']['Aggregate'].get(task.collection_name, [])
+            if aggregate_data and len(aggregate_data) > 0:
+                total_count = aggregate_data[0].get('meta', {}).get('count', 0)
+        
+        # 查询所有内容（分页）
         # 只查询 NewsChunk Schema 中实际存在的字段
         properties = [
             "content", 
@@ -92,12 +101,15 @@ async def browse_knowledge_base(
         response = collection_manager.client.query.get(
             task.collection_name,
             properties
-        ).with_limit(limit).with_offset(offset).do()
+        ).with_additional(["id"]).with_limit(limit).with_offset(offset).do()
         
         items = []
         if 'data' in response and 'Get' in response['data']:
             collection_data = response['data']['Get'].get(task.collection_name, [])
             for item in collection_data:
+                # 获取 ID
+                item_id = item.get('_additional', {}).get('id')
+                
                 # 处理 Chunk Schema
                 if 'article_titles' in item:
                     titles = item.get('article_titles', [])
@@ -119,6 +131,7 @@ async def browse_knowledge_base(
                     published_at = item.get('published_at')
 
                 items.append(KnowledgeItem(
+                    id=item_id,
                     title=title,
                     content=item.get('content', ''),
                     source_name=source_name,
@@ -128,9 +141,55 @@ async def browse_knowledge_base(
         
         return BrowseResponse(
             items=items,
-            total=len(items),
+            total=total_count,  # 使用真实的总数量
             task_name=task_name
         )
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Browse failed: {str(e)}")
+
+@router.delete("/tasks/{task_name}/items/{item_id}")
+async def delete_knowledge_item(
+    task_name: str,
+    item_id: str
+):
+    """
+    删除知识库中的单个项目
+    """
+    # 验证任务是否存在
+    task_manager = TaskManager()
+    task = task_manager.get_task(task_name)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_name}")
+    
+    # 删除项目
+    config = get_config()
+    
+    # 获取 Embedding API Key
+    embedding_api_key = config.get('embedding.api_key') or config.get('llm.api_key')
+    headers = {}
+    if embedding_api_key:
+        headers["X-OpenAI-Api-Key"] = embedding_api_key
+    
+    # 准备 embedding 配置
+    embedding_config = {
+        'model': config.get('embedding.model', 'text-embedding-3-small'),
+        'base_url': config.get('embedding.base_url', 'https://litellm.futurx.cc'),
+        'dimensions': config.get('embedding.dimensions', 1536)
+    }
+    
+    collection_manager = CollectionManager(
+        weaviate_url=config.get('weaviate.url'),
+        api_key=config.get('weaviate.api_key'),
+        additional_headers=headers,
+        embedding_config=embedding_config
+    )
+    
+    try:
+        success = collection_manager.delete_item(task.collection_name, item_id)
+        if success:
+            return {"success": True, "message": "Item deleted successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete item")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
