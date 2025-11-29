@@ -26,6 +26,9 @@ class ExternalQueryRequest(BaseModel):
     """外部查询请求"""
     query: str = Field(..., description="查询问题")
     limit: int = Field(5, ge=1, le=20, description="返回结果数量")
+    search_mode: str = Field("hybrid", description="搜索模式: hybrid, semantic, keyword")
+    alpha: float = Field(0.5, ge=0.0, le=1.0, description="混合搜索权重 (0=纯关键词, 1=纯语义)")
+    min_score: float = Field(0.0, ge=0.0, le=1.0, description="最低分数阈值 (低于此分数的结果不返回)")
 
 class ExternalQueryResponse(BaseModel):
     """外部查询响应"""
@@ -34,6 +37,8 @@ class ExternalQueryResponse(BaseModel):
     query: str
     results: List[dict]
     total: int
+    search_mode: str
+    alpha: float
 
 class TokenInfo(BaseModel):
     """Token 信息"""
@@ -110,25 +115,63 @@ async def query_knowledge_base(
     
     # 执行混合搜索
     config = get_config()
+    
+    # 获取 Embedding API Key（优先使用 embedding.api_key，否则使用 llm.api_key）
+    embedding_api_key = config.get('embedding.api_key') or config.get('llm.api_key')
+    headers = {}
+    if embedding_api_key:
+        headers["X-OpenAI-Api-Key"] = embedding_api_key
+    
+    # 准备 embedding 配置
+    embedding_config = {
+        'model': config.get('embedding.model', 'text-embedding-3-small'),
+        'base_url': config.get('embedding.base_url', 'https://litellm.futurx.cc'),
+        'dimensions': config.get('embedding.dimensions', 1536)
+    }
+    
     collection_manager = CollectionManager(
         weaviate_url=config.get('weaviate.url'),
-        api_key=config.get('weaviate.api_key')
+        api_key=config.get('weaviate.api_key'),
+        additional_headers=headers,
+        embedding_config=embedding_config
     )
     
+    
     try:
+        # 根据搜索模式设置 alpha
+        if request.search_mode == 'semantic':
+            alpha = 1.0  # 纯语义搜索
+        elif request.search_mode == 'keyword':
+            alpha = 0.0  # 纯关键词搜索
+        else:  # hybrid
+            alpha = request.alpha  # 使用用户指定的权重
+        
         results = collection_manager.hybrid_search(
             collection_name=task.collection_name,
             query=request.query,
             limit=request.limit,
-            alpha=config.get('weaviate.search.hybrid_alpha', 0.5)
+            alpha=alpha,
+            similarity_threshold=request.min_score  # 使用用户指定的最低分数
         )
         
         # 格式化结果
         formatted_results = []
         for item in results:
+            score = item.get("_additional", {}).get("score")
+            
+            # 转换 score 为 float（可能是字符串）
+            try:
+                score_float = float(score) if score is not None else 0.0
+            except (ValueError, TypeError):
+                score_float = 0.0
+            
+            # 再次过滤低分结果（双重保险）
+            if score_float < request.min_score:
+                continue
+            
             formatted_results.append({
                 "content": item.get("content"),
-                "score": item.get("_additional", {}).get("score"),
+                "score": score_float,
                 "article_titles": item.get("article_titles", []),
                 "sources": item.get("sources", []),
                 "categories": item.get("categories", [])
@@ -138,7 +181,9 @@ async def query_knowledge_base(
             task_name=task_name,
             query=request.query,
             results=formatted_results,
-            total=len(formatted_results)
+            total=len(formatted_results),
+            search_mode=request.search_mode,
+            alpha=alpha
         )
         
     except Exception as e:
