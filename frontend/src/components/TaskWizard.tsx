@@ -40,6 +40,12 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
                 alert('Please fill in task name and scene description')
                 return
             }
+            // Validate task name format (only alphanumeric, underscore, hyphen)
+            const namePattern = /^[a-zA-Z0-9_-]+$/
+            if (!namePattern.test(wizardData.name)) {
+                alert('Task name can only contain English letters, numbers, underscores (_), and hyphens (-)')
+                return
+            }
             // Trigger AI recommendation
             await handleRecommend()
         } else if (step === 2) {
@@ -167,10 +173,13 @@ export default function TaskWizard({ onClose, onSuccess }: TaskWizardProps) {
                                 <label>Task Name *</label>
                                 <input
                                     type="text"
-                                    placeholder="e.g., tech-news"
+                                    placeholder="e.g., tech-news, finance_daily, ai-research"
                                     value={wizardData.name}
                                     onChange={(e) => setWizardData({ ...wizardData, name: e.target.value })}
                                 />
+                                <small style={{ color: '#888', fontSize: '0.85em' }}>
+                                    Only English letters, numbers, underscores (_), and hyphens (-) are allowed
+                                </small>
                             </div>
                             <div className="form-group">
                                 <label>Scene Description *</label>

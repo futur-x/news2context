@@ -436,8 +436,37 @@ function TaskDetail() {
                                 {`curl -X POST "${apiUrl}" \\
   -H "Authorization: Bearer YOUR_TOKEN" \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "AI news", "limit": 5}'`}
+  -d '{
+    "query": "AI news",
+    "limit": 5,
+    "search_mode": "hybrid",
+    "alpha": 0.7,
+    "min_score": 0.3
+  }'`}
                             </code>
+                        </div>
+
+                        <div className="api-params-doc">
+                            <label>API Parameters</label>
+                            <ul className="params-list">
+                                <li><code>query</code> (required): 查询问题</li>
+                                <li><code>limit</code> (optional, 1-20, default: 5): 返回结果数量</li>
+                                <li><code>search_mode</code> (optional, default: "hybrid"): 搜索模式
+                                    <ul>
+                                        <li>"hybrid" - 混合搜索</li>
+                                        <li>"semantic" - 纯语义搜索</li>
+                                        <li>"keyword" - 纯关键词搜索</li>
+                                    </ul>
+                                </li>
+                                <li><code>alpha</code> (optional, 0.0-1.0, default: 0.5): 混合搜索权重
+                                    <ul>
+                                        <li>0.0 = 纯关键词</li>
+                                        <li>1.0 = 纯语义</li>
+                                        <li>0.5 = 平衡</li>
+                                    </ul>
+                                </li>
+                                <li><code>min_score</code> (optional, 0.0-1.0, default: 0.0): 最低分数阈值（低于此分数的结果不返回）</li>
+                            </ul>
                         </div>
                     </div>
 
