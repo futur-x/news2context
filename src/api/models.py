@@ -49,6 +49,7 @@ class TaskDetail(BaseModel):
     status: TaskStatus
     created_at: datetime
     locked: bool
+    schedule: Optional[Dict[str, Any]] = None
 
 class TaskListResponse(BaseResponse):
     """任务列表响应"""

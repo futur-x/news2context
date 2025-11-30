@@ -240,6 +240,12 @@ class TaskManager:
                 task_data['schedule']['cron'] = updates['schedule']['cron']
             if 'date_range' in updates['schedule']:
                 task_data['schedule']['date_range'] = updates['schedule']['date_range']
+            
+            # Handle enabled status which is stored in status.enabled
+            if 'enabled' in updates['schedule']:
+                if 'status' not in task_data:
+                    task_data['status'] = {}
+                task_data['status']['enabled'] = updates['schedule']['enabled']
         if 'status' in updates and 'enabled' in updates['status']:
              task_data['status']['enabled'] = updates['status']['enabled']
              

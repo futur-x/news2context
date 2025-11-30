@@ -1,164 +1,226 @@
 .schedule-editor {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    padding: var(--space-md);
+    padding: var(--space-lg);
 }
 
 .schedule-type-selector {
     display: flex;
-    flex-direction: column;
     gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
 }
 
 .schedule-type-option {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    padding: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
 }
 
 .schedule-type-option:hover {
     border-color: var(--primary-color);
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
 }
 
 .schedule-type-option input[type="radio"] {
-    cursor: pointer;
+    margin: 0;
 }
 
 .schedule-type-option input[type="radio"]:checked+span {
-    font-weight: 600;
     color: var(--primary-color);
+    font-weight: 500;
 }
 
-.inline-select,
-.inline-time,
-.inline-cron {
-    padding: var(--space-xs) var(--space-sm);
+.schedule-config {
+    margin-bottom: var(--space-lg);
+    min-height: 100px;
+}
+
+/* Interval Config */
+.interval-config {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+.interval-input {
+    width: 100px;
+    padding: var(--space-sm);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    background-color: var(--bg-primary);
+    font-size: 1rem;
 }
 
-.inline-select {
-    min-width: 60px;
+.interval-unit {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: white;
+    cursor: pointer;
 }
 
-.inline-time {
-    min-width: 100px;
-}
-
-.inline-cron {
-    min-width: 150px;
-    font-family: 'Monaco', 'Courier New', monospace;
-}
-
-.weekly-option {
+/* Daily Config */
+.daily-config {
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    gap: var(--space-md);
 }
 
-.weekly-config {
+.time-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    width: 100%;
-    margin-top: var(--space-sm);
 }
 
-.day-selector {
+.time-item {
     display: flex;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.time-item input[type="time"] {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+}
+
+.btn-remove-time {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+}
+
+.btn-remove-time:hover {
+    opacity: 0.8;
+}
+
+/* Weekly Config */
+.weekly-config {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.weekday-selector {
+    display: flex;
+    gap: var(--space-sm);
     flex-wrap: wrap;
 }
 
-.day-btn {
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    background-color: var(--bg-primary);
+.weekday-btn {
+    position: relative;
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.85rem;
-    min-width: 45px;
 }
 
-.day-btn:hover {
+.weekday-btn input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.weekday-btn span {
+    display: block;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+    min-width: 50px;
+    text-align: center;
+}
+
+.weekday-btn:hover span {
     border-color: var(--primary-color);
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
 }
 
-.day-btn.selected {
-    background-color: var(--primary-color);
+.weekday-btn.selected span {
+    background: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
 }
 
 .weekly-time {
     display: flex;
+    gap: var(--space-md);
     align-items: center;
-    gap: var(--space-sm);
 }
 
-.custom-option {
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.cron-error {
-    padding: var(--space-sm);
-    background-color: #fee;
-    border: 1px solid #fcc;
-    border-radius: var(--radius-sm);
-    color: #c00;
-    font-size: 0.9rem;
-}
-
-.next-run-preview {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-md);
-    background-color: var(--bg-secondary);
-    border-radius: var(--radius-md);
-    border-left: 3px solid var(--primary-color);
-}
-
-.next-run-label {
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.next-run-time {
-    color: var(--primary-color);
+.weekly-time label {
     font-weight: 500;
 }
 
-.schedule-editor-actions {
+.weekly-time input[type="time"] {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+}
+
+/* Custom Config */
+.custom-config {
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
     gap: var(--space-sm);
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--border-color);
+}
+
+.cron-input {
+    padding: var(--space-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+}
+
+.custom-config small {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Preview */
+.schedule-preview {
+    padding: var(--space-md);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+}
+
+.schedule-preview strong {
+    color: var(--text-primary);
+    margin-right: var(--space-sm);
+}
+
+/* Actions */
+.schedule-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: flex-end;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .day-selector {
-        justify-content: center;
-    }
-
-    .schedule-editor-actions {
+    .schedule-type-selector {
         flex-direction: column;
     }
 
-    .schedule-editor-actions button {
-        width: 100%;
+    .weekday-selector {
+        justify-content: space-between;
+    }
+
+    .weekday-btn span {
+        min-width: 40px;
+        padding: var(--space-xs) var(--space-sm);
     }
 }

@@ -192,5 +192,10 @@ def _convert_task_to_model(task) -> TaskDetail:
         sources=sources,
         status=status,
         created_at=task.created_at,
-        locked=task.locked
+        locked=task.locked,
+        schedule={
+            'enabled': task.status.get('enabled', True),
+            'cron': task.schedule.get('cron', '* * * * *'),
+            'date_range': task.schedule.get('date_range', 'today')
+        }
     )

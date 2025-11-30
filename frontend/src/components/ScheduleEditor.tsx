@@ -1,95 +1,177 @@
-import { useState, useEffect } from 'react'
-import { ScheduleConfig, cronToScheduleType, scheduleToCron, getNextRunTime, formatNextRun, validateCron, getDayName } from '../utils/scheduleUtils'
+import { useState, useEffect, useRef } from 'react'
 import './ScheduleEditor.css'
 
-interface ScheduleEditorProps {
+interface ScheduleConfig {
     enabled: boolean
     cron: string
-    onSave: (enabled: boolean, cron: string) => Promise<void>
-    onCancel: () => void
 }
 
-function ScheduleEditor({ enabled, cron, onSave, onCancel }: ScheduleEditorProps) {
-    const [isEnabled, setIsEnabled] = useState(enabled)
-    const [config, setConfig] = useState<ScheduleConfig>(cronToScheduleType(cron))
-    const [saving, setSaving] = useState(false)
-    const [customCron, setCustomCron] = useState(cron)
-    const [cronError, setCronError] = useState('')
+interface ScheduleEditorProps {
+    schedule: ScheduleConfig
+    onChange: (schedule: ScheduleConfig) => void
+    onSave?: () => void
+    onCancel?: () => void
+}
 
-    // Update next run time when config changes
-    const [nextRun, setNextRun] = useState<Date | null>(null)
+type ScheduleType = 'disabled' | 'interval' | 'daily' | 'weekly' | 'custom'
 
+function ScheduleEditor({ schedule, onChange, onSave, onCancel }: ScheduleEditorProps) {
+    const [scheduleType, setScheduleType] = useState<ScheduleType>('disabled')
+    const [intervalValue, setIntervalValue] = useState(30)
+    const [intervalUnit, setIntervalUnit] = useState<'minutes' | 'hours'>('minutes')
+    const [dailyTimes, setDailyTimes] = useState<string[]>(['09:00'])
+    const [weeklyDays, setWeeklyDays] = useState<number[]>([1]) // 1 = Monday
+    const [weeklyTime, setWeeklyTime] = useState('09:00')
+    const [customCron, setCustomCron] = useState('0 9 * * *')
+
+    // Track if this is the first render to skip initial onChange
+    const skipNextOnChange = useRef(true)
+    const lastScheduleRef = useRef(schedule)
+
+    // Parse existing cron on mount or when schedule changes
     useEffect(() => {
-        if (!isEnabled) {
-            setNextRun(null)
+        // Only parse if schedule actually changed
+        if (schedule.enabled === lastScheduleRef.current.enabled &&
+            schedule.cron === lastScheduleRef.current.cron) {
             return
         }
 
-        const cronExpr = config.type === 'custom' ? customCron : scheduleToCron(config)
-        const next = getNextRunTime(cronExpr)
-        setNextRun(next)
-    }, [config, customCron, isEnabled])
+        lastScheduleRef.current = schedule
 
-    const handleSave = async () => {
-        if (!isEnabled) {
-            setSaving(true)
-            await onSave(false, '')
-            setSaving(false)
+        // Mark that we should skip the next onChange call (from state updates below)
+        skipNextOnChange.current = true
+
+        if (!schedule.enabled) {
+            setScheduleType('disabled')
             return
         }
 
-        const cronExpr = config.type === 'custom' ? customCron : scheduleToCron(config)
+        const cron = schedule.cron
+        setCustomCron(cron)
 
-        if (!validateCron(cronExpr)) {
-            setCronError('Invalid cron expression')
-            return
+        // Try to detect schedule type from cron
+        if (cron.match(/^\*\/\d+ \* \* \* \*$/)) {
+            // Interval minutes: */30 * * * *
+            const minutes = parseInt(cron.split('/')[1].split(' ')[0])
+            setScheduleType('interval')
+            setIntervalValue(minutes)
+            setIntervalUnit('minutes')
+        } else if (cron.match(/^0 \*\/\d+ \* \* \*$/)) {
+            // Interval hours: 0 */2 * * *
+            const hours = parseInt(cron.split('/')[1].split(' ')[0])
+            setScheduleType('interval')
+            setIntervalValue(hours)
+            setIntervalUnit('hours')
+        } else if (cron.match(/^0 \d+(,\d+)* \* \* \*$/)) {
+            // Daily: 0 9,14,18 * * *
+            const hours = cron.split(' ')[1].split(',')
+            const times = hours.map(h => `${h.padStart(2, '0')}:00`)
+            setScheduleType('daily')
+            setDailyTimes(times)
+        } else if (cron.match(/^0 \d+ \* \* \d+(,\d+)*$/)) {
+            // Weekly: 0 9 * * 1,3,5
+            const hour = cron.split(' ')[1]
+            const days = cron.split(' ')[4].split(',').map(d => parseInt(d))
+            setScheduleType('weekly')
+            setWeeklyTime(`${hour.padStart(2, '0')}:00`)
+            setWeeklyDays(days)
+        } else {
+            setScheduleType('custom')
         }
+    }, [schedule])
 
-        setSaving(true)
-        try {
-            await onSave(true, cronExpr)
-        } finally {
-            setSaving(false)
-        }
-    }
-
-    const handleTypeChange = (type: ScheduleConfig['type']) => {
-        setCronError('')
-        switch (type) {
+    // Generate cron expression based on current settings
+    const generateCron = (): string => {
+        switch (scheduleType) {
             case 'disabled':
-                setIsEnabled(false)
-                setConfig({ type: 'disabled' })
-                break
-            case 'minutes':
-                setIsEnabled(true)
-                setConfig({ type: 'minutes', interval: 30 })
-                break
-            case 'hours':
-                setIsEnabled(true)
-                setConfig({ type: 'hours', interval: 2 })
-                break
+                return '0 9 * * *' // Default
+            case 'interval':
+                if (intervalUnit === 'minutes') {
+                    return `*/${intervalValue} * * * *`
+                } else {
+                    return `0 */${intervalValue} * * *`
+                }
             case 'daily':
-                setIsEnabled(true)
-                setConfig({ type: 'daily', times: ['09:00'] })
-                break
+                const hours = dailyTimes.map(t => parseInt(t.split(':')[0])).join(',')
+                return `0 ${hours} * * *`
             case 'weekly':
-                setIsEnabled(true)
-                setConfig({ type: 'weekly', days: [1], time: '09:00' })
-                break
+                const hour = parseInt(weeklyTime.split(':')[0])
+                const days = weeklyDays.join(',')
+                return `0 ${hour} * * ${days}`
             case 'custom':
-                setIsEnabled(true)
-                setConfig({ type: 'custom', cron: customCron })
-                break
+                return customCron
+            default:
+                return '0 9 * * *'
         }
     }
 
-    const handleDayToggle = (day: number) => {
-        if (config.type !== 'weekly') return
-        const days = config.days || []
-        const newDays = days.includes(day)
-            ? days.filter(d => d !== day)
-            : [...days, day].sort()
-        setConfig({ ...config, days: newDays })
+    // Update parent when settings change
+    useEffect(() => {
+        // Skip the onChange call that results from parsing the initial prop
+        if (skipNextOnChange.current) {
+            skipNextOnChange.current = false
+            return
+        }
+
+        const newCron = generateCron()
+
+        const newSchedule: ScheduleConfig = {
+            enabled: scheduleType !== 'disabled',
+            cron: newCron
+        }
+        onChange(newSchedule)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scheduleType, intervalValue, intervalUnit, dailyTimes, weeklyDays, weeklyTime, customCron])
+
+    const addDailyTime = () => {
+        setDailyTimes([...dailyTimes, '12:00'])
+    }
+
+    const removeDailyTime = (index: number) => {
+        setDailyTimes(dailyTimes.filter((_, i) => i !== index))
+    }
+
+    const updateDailyTime = (index: number, value: string) => {
+        const newTimes = [...dailyTimes]
+        newTimes[index] = value
+        setDailyTimes(newTimes)
+    }
+
+    const toggleWeeklyDay = (day: number) => {
+        if (weeklyDays.includes(day)) {
+            setWeeklyDays(weeklyDays.filter(d => d !== day))
+        } else {
+            setWeeklyDays([...weeklyDays, day].sort())
+        }
+    }
+
+    const weekDays = [
+        { value: 1, label: 'Mon' },
+        { value: 2, label: 'Tue' },
+        { value: 3, label: 'Wed' },
+        { value: 4, label: 'Thu' },
+        { value: 5, label: 'Fri' },
+        { value: 6, label: 'Sat' },
+        { value: 0, label: 'Sun' }
+    ]
+
+    const getNextRunPreview = (): string => {
+        if (scheduleType === 'disabled') {
+            return 'Disabled - will not run automatically'
+        }
+
+        const cron = generateCron()
+        // Simple preview - in production, use a cron parser library
+        if (scheduleType === 'interval') {
+            return `Every ${intervalValue} ${intervalUnit}`
+        } else if (scheduleType === 'daily') {
+            return `Daily at ${dailyTimes.join(', ')}`
+        } else if (scheduleType === 'weekly') {
+            const dayNames = weeklyDays.map(d => weekDays.find(wd => wd.value === d)?.label).join(', ')
+            return `Weekly on ${dayNames} at ${weeklyTime}`
+        } else {
+            return `Cron: ${cron}`
+        }
     }
 
     return (
@@ -98,8 +180,9 @@ function ScheduleEditor({ enabled, cron, onSave, onCancel }: ScheduleEditorProps
                 <label className="schedule-type-option">
                     <input
                         type="radio"
-                        checked={!isEnabled}
-                        onChange={() => handleTypeChange('disabled')}
+                        name="scheduleType"
+                        checked={scheduleType === 'disabled'}
+                        onChange={() => setScheduleType('disabled')}
                     />
                     <span>Disabled</span>
                 </label>
@@ -107,150 +190,155 @@ function ScheduleEditor({ enabled, cron, onSave, onCancel }: ScheduleEditorProps
                 <label className="schedule-type-option">
                     <input
                         type="radio"
-                        checked={isEnabled && config.type === 'minutes'}
-                        onChange={() => handleTypeChange('minutes')}
+                        name="scheduleType"
+                        checked={scheduleType === 'interval'}
+                        onChange={() => setScheduleType('interval')}
                     />
                     <span>Every</span>
-                    {config.type === 'minutes' && (
-                        <select
-                            value={config.interval}
-                            onChange={(e) => setConfig({ ...config, interval: parseInt(e.target.value) })}
-                            className="inline-select"
-                        >
-                            <option value={5}>5</option>
-                            <option value={15}>15</option>
-                            <option value={30}>30</option>
-                            <option value={60}>60</option>
-                        </select>
-                    )}
-                    <span>minutes</span>
                 </label>
 
                 <label className="schedule-type-option">
                     <input
                         type="radio"
-                        checked={isEnabled && config.type === 'hours'}
-                        onChange={() => handleTypeChange('hours')}
+                        name="scheduleType"
+                        checked={scheduleType === 'daily'}
+                        onChange={() => setScheduleType('daily')}
                     />
-                    <span>Every</span>
-                    {config.type === 'hours' && (
-                        <select
-                            value={config.interval}
-                            onChange={(e) => setConfig({ ...config, interval: parseInt(e.target.value) })}
-                            className="inline-select"
-                        >
-                            <option value={1}>1</option>
-                            <option value={2}>2</option>
-                            <option value={4}>4</option>
-                            <option value={6}>6</option>
-                            <option value={12}>12</option>
-                        </select>
-                    )}
-                    <span>hours</span>
+                    <span>Daily</span>
                 </label>
 
                 <label className="schedule-type-option">
                     <input
                         type="radio"
-                        checked={isEnabled && config.type === 'daily'}
-                        onChange={() => handleTypeChange('daily')}
+                        name="scheduleType"
+                        checked={scheduleType === 'weekly'}
+                        onChange={() => setScheduleType('weekly')}
                     />
-                    <span>Daily at</span>
-                    {config.type === 'daily' && (
+                    <span>Weekly</span>
+                </label>
+
+                <label className="schedule-type-option">
+                    <input
+                        type="radio"
+                        name="scheduleType"
+                        checked={scheduleType === 'custom'}
+                        onChange={() => setScheduleType('custom')}
+                    />
+                    <span>Custom</span>
+                </label>
+            </div>
+
+            <div className="schedule-config">
+                {scheduleType === 'interval' && (
+                    <div className="interval-config">
                         <input
-                            type="time"
-                            value={config.times?.[0] || '09:00'}
-                            onChange={(e) => setConfig({ ...config, times: [e.target.value] })}
-                            className="inline-time"
+                            type="number"
+                            min="1"
+                            max="1440"
+                            value={intervalValue}
+                            onChange={(e) => setIntervalValue(parseInt(e.target.value) || 1)}
+                            className="interval-input"
                         />
-                    )}
-                </label>
+                        <select
+                            value={intervalUnit}
+                            onChange={(e) => setIntervalUnit(e.target.value as 'minutes' | 'hours')}
+                            className="interval-unit"
+                        >
+                            <option value="minutes">minutes</option>
+                            <option value="hours">hours</option>
+                        </select>
+                    </div>
+                )}
 
-                <label className="schedule-type-option weekly-option">
-                    <input
-                        type="radio"
-                        checked={isEnabled && config.type === 'weekly'}
-                        onChange={() => handleTypeChange('weekly')}
-                    />
-                    <span>Weekly on</span>
-                    {config.type === 'weekly' && (
-                        <div className="weekly-config">
-                            <div className="day-selector">
-                                {[0, 1, 2, 3, 4, 5, 6].map(day => (
-                                    <button
-                                        key={day}
-                                        type="button"
-                                        className={`day-btn ${config.days?.includes(day) ? 'selected' : ''}`}
-                                        onClick={() => handleDayToggle(day)}
-                                    >
-                                        {getDayName(day)}
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="weekly-time">
-                                <span>at</span>
-                                <input
-                                    type="time"
-                                    value={config.time || '09:00'}
-                                    onChange={(e) => setConfig({ ...config, time: e.target.value })}
-                                    className="inline-time"
-                                />
-                            </div>
+                {scheduleType === 'daily' && (
+                    <div className="daily-config">
+                        <div className="time-list">
+                            {dailyTimes.map((time, index) => (
+                                <div key={index} className="time-item">
+                                    <input
+                                        type="time"
+                                        value={time}
+                                        onChange={(e) => updateDailyTime(index, e.target.value)}
+                                    />
+                                    {dailyTimes.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDailyTime(index)}
+                                            className="btn-remove-time"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
                         </div>
-                    )}
-                </label>
+                        <button
+                            type="button"
+                            onClick={addDailyTime}
+                            className="btn btn-secondary btn-sm"
+                        >
+                            + Add Time
+                        </button>
+                    </div>
+                )}
 
-                <label className="schedule-type-option custom-option">
-                    <input
-                        type="radio"
-                        checked={isEnabled && config.type === 'custom'}
-                        onChange={() => handleTypeChange('custom')}
-                    />
-                    <span>Custom (Cron)</span>
-                    {config.type === 'custom' && (
+                {scheduleType === 'weekly' && (
+                    <div className="weekly-config">
+                        <div className="weekday-selector">
+                            {weekDays.map(day => (
+                                <label key={day.value} className={`weekday-btn ${weeklyDays.includes(day.value) ? 'selected' : ''}`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={weeklyDays.includes(day.value)}
+                                        onChange={() => toggleWeeklyDay(day.value)}
+                                    />
+                                    <span>{day.label}</span>
+                                </label>
+                            ))}
+                        </div>
+                        <div className="weekly-time">
+                            <label>at</label>
+                            <input
+                                type="time"
+                                value={weeklyTime}
+                                onChange={(e) => setWeeklyTime(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {scheduleType === 'custom' && (
+                    <div className="custom-config">
                         <input
                             type="text"
                             value={customCron}
-                            onChange={(e) => {
-                                setCustomCron(e.target.value)
-                                setCronError('')
-                            }}
-                            placeholder="0 8 * * *"
-                            className="inline-cron"
+                            onChange={(e) => setCustomCron(e.target.value)}
+                            placeholder="0 9 * * *"
+                            className="cron-input"
                         />
-                    )}
-                </label>
+                        <small>Cron expression (minute hour day month weekday)</small>
+                    </div>
+                )}
             </div>
 
-            {cronError && (
-                <div className="cron-error">{cronError}</div>
-            )}
+            <div className="schedule-preview">
+                <strong>Schedule:</strong> {getNextRunPreview()}
+            </div>
 
-            {isEnabled && nextRun && (
-                <div className="next-run-preview">
-                    <span className="next-run-label">Next run:</span>
-                    <span className="next-run-time">{formatNextRun(nextRun)}</span>
+            {(onSave || onCancel) && (
+                <div className="schedule-actions">
+                    {onCancel && (
+                        <button type="button" onClick={onCancel} className="btn btn-secondary">
+                            Cancel
+                        </button>
+                    )}
+                    {onSave && (
+                        <button type="button" onClick={onSave} className="btn btn-primary">
+                            Save Schedule
+                        </button>
+                    )}
                 </div>
             )}
-
-            <div className="schedule-editor-actions">
-                <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={onCancel}
-                    disabled={saving}
-                >
-                    Cancel
-                </button>
-                <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleSave}
-                    disabled={saving}
-                >
-                    {saving ? 'Saving...' : 'Save Schedule'}
-                </button>
-            </div>
         </div>
     )
 }

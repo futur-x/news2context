@@ -5,7 +5,7 @@ locked: true
 name: stock-news
 scene: 一个2级市场的基金经理的参考新闻，需要涵盖国内外的新闻大事，政治，经济，科技，最好还有研报，还有美股的新闻
 schedule:
-  cron: 0 8 * * *
+  cron: 0 9 * * *
   custom_range:
     end: null
     start: null
@@ -20,24 +20,8 @@ sources:
   name: 虎嗅网
   url: null
 - category: 综合
-  hashid: wWmoO5Rd4E
-  name: 澎湃
-  url: null
-- category: 综合
   hashid: x9ozB4KoXb
   name: 今日头条
-  url: null
-- category: 综合
-  hashid: KqndgxeLl9
-  name: 微博
-  url: null
-- category: 财经
-  hashid: 0MdKam4ow1
-  name: 第一财经
-  url: null
-- category: 财经
-  hashid: x9ozBY7oXb
-  name: 财新网
   url: null
 - category: 财经
   hashid: G2me3ndwjq
@@ -129,7 +113,7 @@ sources:
   url: null
 status:
   current_status: success
-  enabled: true
+  enabled: false
   last_error: null
   last_run: '2025-11-30T11:01:04.087758'
   last_success_count: 6

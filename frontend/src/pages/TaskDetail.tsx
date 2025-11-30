@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { taskAPI, externalAPI, chatAPI } from '../api/client'
 import api from '../api/client'
 import SourceSelector from '../components/SourceSelector'
+import ScheduleEditor from '../components/ScheduleEditor'
 import './TaskDetail.css'
 import './TaskDetailExtras.css'
 
@@ -13,6 +14,10 @@ interface Task {
     collection: string
     sources: any[]
     status: any
+    schedule?: {
+        enabled: boolean
+        cron: string
+    }
 }
 
 function TaskDetail() {
@@ -44,6 +49,8 @@ function TaskDetail() {
     const [itemToDelete, setItemToDelete] = useState<any>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [showDeleteTaskConfirm, setShowDeleteTaskConfirm] = useState(false)
+    const [showScheduleModal, setShowScheduleModal] = useState(false)
+    const [scheduleConfig, setScheduleConfig] = useState({ enabled: false, cron: '0 9 * * *' })
 
     // Source management state
     const [showAddSourceModal, setShowAddSourceModal] = useState(false)
@@ -188,6 +195,39 @@ function TaskDetail() {
 
     const handleCancelDeleteTask = () => {
         setShowDeleteTaskConfirm(false)
+    }
+
+    const handleEditSchedule = () => {
+        if (task?.schedule) {
+            setScheduleConfig(task.schedule)
+        }
+        setShowScheduleModal(true)
+    }
+
+    const handleSaveSchedule = async () => {
+        try {
+            await taskAPI.update(taskName!, {
+                schedule: scheduleConfig
+            })
+
+            // Optimistically update local state immediately
+            if (task) {
+                setTask({ ...task, schedule: scheduleConfig })
+            }
+
+            setShowScheduleModal(false)
+
+            // Refetch after a short delay to ensure backend has processed the update
+            setTimeout(() => {
+                loadTask()
+            }, 500)
+        } catch (error) {
+            console.error('Failed to update schedule:', error)
+        }
+    }
+
+    const handleCancelSchedule = () => {
+        setShowScheduleModal(false)
     }
 
     const handleRemoveSource = async (sourceHashId: string) => {
@@ -398,6 +438,37 @@ function TaskDetail() {
                             <div className="stat-label">Total Runs</div>
                             <div className="stat-value">{task.status.total_runs}</div>
                         </div>
+                    </div>
+                </div>
+
+                {/* Schedule Settings Section */}
+                <div className="detail-section">
+                    <div className="section-header">
+                        <h2 className="section-title">⏰ Schedule Settings</h2>
+                        <button className="btn btn-secondary btn-sm" onClick={handleEditSchedule}>
+                            Edit Schedule
+                        </button>
+                    </div>
+                    <div className="schedule-info">
+                        {task.schedule?.enabled ? (
+                            <>
+                                <div className="schedule-status enabled">
+                                    <span className="status-dot">●</span>
+                                    <span>Enabled</span>
+                                </div>
+                                <div className="schedule-details">
+                                    <div className="schedule-detail-item">
+                                        <span className="label">Cron Expression:</span>
+                                        <code>{task.schedule.cron}</code>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="schedule-status disabled">
+                                <span className="status-dot">○</span>
+                                <span>Disabled - Task will not run automatically</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -705,100 +776,126 @@ function TaskDetail() {
                         </div>
                     </div>
                 )}
+
+                {/* Schedule Edit Modal */}
+                {showScheduleModal && (
+                    <div className="modal-overlay" onClick={handleCancelSchedule}>
+                        <div className="modal-content schedule-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>Edit Schedule Settings</h2>
+                                <button className="modal-close" onClick={handleCancelSchedule}>×</button>
+                            </div>
+                            <div className="modal-body">
+                                <ScheduleEditor
+                                    schedule={scheduleConfig}
+                                    onChange={setScheduleConfig}
+                                    onSave={handleSaveSchedule}
+                                    onCancel={handleCancelSchedule}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Knowledge Base Item Detail Modal */}
-            {showKbDetailModal && selectedKbItem && (
-                <div className="modal-overlay" onClick={() => setShowKbDetailModal(false)}>
-                    <div className="modal-content kb-detail-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>{selectedKbItem.title}</h2>
-                            <button className="modal-close" onClick={() => setShowKbDetailModal(false)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="kb-detail-meta">
-                                <span className="kb-detail-source">📰 {selectedKbItem.source_name}</span>
-                                {selectedKbItem.published_at && (
-                                    <span className="kb-detail-date">📅 {new Date(selectedKbItem.published_at).toLocaleString()}</span>
+            {
+                showKbDetailModal && selectedKbItem && (
+                    <div className="modal-overlay" onClick={() => setShowKbDetailModal(false)}>
+                        <div className="modal-content kb-detail-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>{selectedKbItem.title}</h2>
+                                <button className="modal-close" onClick={() => setShowKbDetailModal(false)}>×</button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="kb-detail-meta">
+                                    <span className="kb-detail-source">📰 {selectedKbItem.source_name}</span>
+                                    {selectedKbItem.published_at && (
+                                        <span className="kb-detail-date">📅 {new Date(selectedKbItem.published_at).toLocaleString()}</span>
+                                    )}
+                                </div>
+                                <div className="kb-detail-content">
+                                    {selectedKbItem.content}
+                                </div>
+                                {selectedKbItem.url && (
+                                    <div className="kb-detail-actions">
+                                        <a href={selectedKbItem.url} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                                            查看原文 →
+                                        </a>
+                                    </div>
                                 )}
                             </div>
-                            <div className="kb-detail-content">
-                                {selectedKbItem.content}
-                            </div>
-                            {selectedKbItem.url && (
-                                <div className="kb-detail-actions">
-                                    <a href={selectedKbItem.url} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
-                                        查看原文 →
-                                    </a>
-                                </div>
-                            )}
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && itemToDelete && (
-                <div className="modal-overlay" onClick={handleCancelDelete}>
-                    <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>确认删除</h2>
-                            <button className="modal-close" onClick={handleCancelDelete}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <p>确定要删除以下内容吗？</p>
-                            <div className="delete-item-preview">
-                                <strong>{itemToDelete.title}</strong>
-                                <div className="delete-item-meta">
-                                    <span>📰 {itemToDelete.source_name}</span>
-                                </div>
+            {
+                showDeleteConfirm && itemToDelete && (
+                    <div className="modal-overlay" onClick={handleCancelDelete}>
+                        <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>确认删除</h2>
+                                <button className="modal-close" onClick={handleCancelDelete}>×</button>
                             </div>
-                            <p className="delete-warning">此操作无法撤销</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={handleCancelDelete}>
-                                取消
-                            </button>
-                            <button className="btn btn-danger" onClick={handleConfirmDelete}>
-                                确认删除
-                            </button>
+                            <div className="modal-body">
+                                <p>确定要删除以下内容吗？</p>
+                                <div className="delete-item-preview">
+                                    <strong>{itemToDelete.title}</strong>
+                                    <div className="delete-item-meta">
+                                        <span>📰 {itemToDelete.source_name}</span>
+                                    </div>
+                                </div>
+                                <p className="delete-warning">此操作无法撤销</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={handleCancelDelete}>
+                                    取消
+                                </button>
+                                <button className="btn btn-danger" onClick={handleConfirmDelete}>
+                                    确认删除
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Delete Task Confirmation Modal */}
-            {showDeleteTaskConfirm && (
-                <div className="modal-overlay" onClick={handleCancelDeleteTask}>
-                    <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>确认删除任务</h2>
-                            <button className="modal-close" onClick={handleCancelDeleteTask}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <p>确定要删除任务 <strong>"{taskName}"</strong> 吗？</p>
-                            <div className="delete-item-preview">
-                                <p>此操作将删除：</p>
-                                <ul>
-                                    <li>任务配置</li>
-                                    <li>所有知识库内容</li>
-                                    <li>任务调度设置</li>
-                                </ul>
+            {
+                showDeleteTaskConfirm && (
+                    <div className="modal-overlay" onClick={handleCancelDeleteTask}>
+                        <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>确认删除任务</h2>
+                                <button className="modal-close" onClick={handleCancelDeleteTask}>×</button>
                             </div>
-                            <p className="delete-warning">⚠️ 此操作无法撤销！</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={handleCancelDeleteTask}>
-                                取消
-                            </button>
-                            <button className="btn btn-danger" onClick={handleConfirmDeleteTask}>
-                                确认删除任务
-                            </button>
+                            <div className="modal-body">
+                                <p>确定要删除任务 <strong>"{taskName}"</strong> 吗？</p>
+                                <div className="delete-item-preview">
+                                    <p>此操作将删除：</p>
+                                    <ul>
+                                        <li>任务配置</li>
+                                        <li>所有知识库内容</li>
+                                        <li>任务调度设置</li>
+                                    </ul>
+                                </div>
+                                <p className="delete-warning">⚠️ 此操作无法撤销！</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={handleCancelDeleteTask}>
+                                    取消
+                                </button>
+                                <button className="btn btn-danger" onClick={handleConfirmDeleteTask}>
+                                    确认删除任务
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
 

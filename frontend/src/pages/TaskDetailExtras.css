@@ -223,6 +223,7 @@
         width: 100%;
     }
 }
+
 /* KB Card Delete Button */
 .kb-card {
     position: relative;
@@ -408,4 +409,73 @@
 
 .btn-danger:hover {
     background: #c92a2a;
+}
+
+/* Schedule Settings Section */
+.schedule-info {
+    padding: var(--space-md);
+}
+
+.schedule-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 1rem;
+    margin-bottom: var(--space-md);
+}
+
+.schedule-status .status-dot {
+    font-size: 1.2rem;
+}
+
+.schedule-status.enabled {
+    color: var(--success-color);
+}
+
+.schedule-status.enabled .status-dot {
+    color: var(--success-color);
+}
+
+.schedule-status.disabled {
+    color: var(--text-secondary);
+}
+
+.schedule-status.disabled .status-dot {
+    color: var(--text-secondary);
+}
+
+.schedule-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.schedule-detail-item {
+    display: flex;
+    gap: var(--space-md);
+    align-items: center;
+}
+
+.schedule-detail-item .label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 140px;
+}
+
+.schedule-detail-item code {
+    background: var(--bg-secondary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+/* Schedule Modal */
+.schedule-modal {
+    max-width: 600px;
+    width: 90%;
+}
+
+.schedule-modal .modal-body {
+    padding: 0;
 }
