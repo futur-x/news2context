@@ -188,6 +188,22 @@ class TaskManager:
             logger.warning(f"任务不存在: {name}")
             return False
         
+        # 获取任务配置以获取 collection 名称
+        try:
+            task = self.get_task(name)
+            if task and task.collection_name: # Changed task.collection to task.collection_name
+                # 删除 Weaviate collection
+                from ..storage.weaviate_client import get_weaviate_client
+                client = get_weaviate_client()
+                try:
+                    client.collections.delete(task.collection_name) # Changed task.collection to task.collection_name
+                    logger.info(f"已删除 Weaviate collection: {task.collection_name}") # Changed task.collection to task.collection_name
+                except Exception as e:
+                    logger.warning(f"删除 Weaviate collection 失败: {e}")
+        except Exception as e:
+            logger.warning(f"获取任务配置失败: {e}")
+        
+        # 删除任务配置文件
         task_file.unlink()
         logger.success(f"任务已删除: {name}")
         return True
