@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import api, { taskAPI, externalAPI, sourcesAPI } from '../api/client'
+import { taskAPI, externalAPI, chatAPI } from '../api/client'
+import api from '../api/client'
 import SourceSelector from '../components/SourceSelector'
 import './TaskDetail.css'
 import './TaskDetailExtras.css'
@@ -41,6 +43,7 @@ function TaskDetail() {
     const [showKbDetailModal, setShowKbDetailModal] = useState(false)
     const [itemToDelete, setItemToDelete] = useState<any>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [showDeleteTaskConfirm, setShowDeleteTaskConfirm] = useState(false)
 
     // Source management state
     const [showAddSourceModal, setShowAddSourceModal] = useState(false)
@@ -112,7 +115,7 @@ function TaskDetail() {
         if (!itemToDelete) return
 
         try {
-            await api.delete(`/ tasks / ${taskName} /items/${itemToDelete.id} `)
+            await api.delete(`/tasks/${taskName}/items/${itemToDelete.id}`)
             setShowDeleteConfirm(false)
             setItemToDelete(null)
             // 删除后刷新列表
@@ -168,18 +171,23 @@ function TaskDetail() {
         }
     }
 
-    const handleDeleteTask = async () => {
-        if (!confirm(`Are you sure you want to delete task "${taskName}" ? This action cannot be undone.`)) {
-            return
-        }
+    const handleDeleteTask = () => {
+        setShowDeleteTaskConfirm(true)
+    }
 
+    const handleConfirmDeleteTask = async () => {
         try {
             await taskAPI.delete(taskName!)
+            setShowDeleteTaskConfirm(false)
             navigate('/')
         } catch (error) {
             console.error('Failed to delete task:', error)
-            alert('Failed to delete task')
+            setShowDeleteTaskConfirm(false)
         }
+    }
+
+    const handleCancelDeleteTask = () => {
+        setShowDeleteTaskConfirm(false)
     }
 
     const handleRemoveSource = async (sourceHashId: string) => {
@@ -202,13 +210,9 @@ function TaskDetail() {
 
         setAddingSources(true)
         try {
-            console.log('[DEBUG] Starting add sources, selected:', selectedNewSources)
-
-            // Fetch source details to map hashids - 使用正确的 API
-            const settingsRes = await sourcesAPI.list()
-            const allSources = settingsRes.data || []
-            console.log('[DEBUG] All sources count:', allSources.length)
-
+            // Fetch source details to map hashids
+            const settingsRes = await import('../api/client').then(m => m.settingsAPI.getTopHub())
+            const allSources = settingsRes.data.sources || []
             const newSourceObjects = allSources
                 .filter((s: any) => selectedNewSources.includes(s.hashid))
                 .map((s: any) => ({
@@ -217,32 +221,19 @@ function TaskDetail() {
                     category: s.category
                 }))
 
-            console.log('[DEBUG] New source objects:', newSourceObjects)
-
             // Merge with existing sources, avoiding duplicates
             const existingHashIds = task.sources.map((s: any) => s.hashid)
             const sourcesToAdd = newSourceObjects.filter((s: any) => !existingHashIds.includes(s.hashid))
 
-            console.log('[DEBUG] Sources to add (after dedup):', sourcesToAdd)
-
             if (sourcesToAdd.length === 0) {
+                alert('Selected sources are already added')
                 setShowAddSourceModal(false)
-                setAddingSources(false)
-                console.log('[DEBUG] No new sources to add (all duplicates)')
                 return
             }
 
             const updatedSources = [...task.sources, ...sourcesToAdd]
-            console.log('[DEBUG] Updated sources count:', updatedSources.length)
 
             await taskAPI.update(taskName!, {
-                sources: updatedSources
-            })
-
-            console.log('[DEBUG] API call successful')
-
-            setTask({
-                ...task,
                 sources: updatedSources
             })
 
@@ -251,7 +242,7 @@ function TaskDetail() {
             loadTask()
         } catch (error) {
             console.error('Failed to add sources:', error)
-            alert('添加源失败')
+            alert('Failed to add sources')
         } finally {
             setAddingSources(false)
         }
@@ -770,6 +761,38 @@ function TaskDetail() {
                             </button>
                             <button className="btn btn-danger" onClick={handleConfirmDelete}>
                                 确认删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Task Confirmation Modal */}
+            {showDeleteTaskConfirm && (
+                <div className="modal-overlay" onClick={handleCancelDeleteTask}>
+                    <div className="modal-content delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>确认删除任务</h2>
+                            <button className="modal-close" onClick={handleCancelDeleteTask}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <p>确定要删除任务 <strong>"{taskName}"</strong> 吗？</p>
+                            <div className="delete-item-preview">
+                                <p>此操作将删除：</p>
+                                <ul>
+                                    <li>任务配置</li>
+                                    <li>所有知识库内容</li>
+                                    <li>任务调度设置</li>
+                                </ul>
+                            </div>
+                            <p className="delete-warning">⚠️ 此操作无法撤销！</p>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={handleCancelDeleteTask}>
+                                取消
+                            </button>
+                            <button className="btn btn-danger" onClick={handleConfirmDeleteTask}>
+                                确认删除任务
                             </button>
                         </div>
                     </div>
