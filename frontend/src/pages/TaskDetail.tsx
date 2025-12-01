@@ -60,6 +60,7 @@ function TaskDetail() {
 
     // Task execution status polling
     const [taskStatus, setTaskStatus] = useState<any>(null)
+    const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         if (taskName) {
@@ -69,19 +70,19 @@ function TaskDetail() {
         }
     }, [taskName])
 
-    // Continuous polling to detect scheduler-triggered tasks
+    // Poll task status when running
     useEffect(() => {
-        if (!taskName) return
-
-        // Poll more frequently when task is running, less frequently when idle
-        const pollInterval = taskStatus?.running ? 2000 : 10000
-
-        const interval = setInterval(() => {
-            loadTaskStatus()
-        }, pollInterval)
-
-        return () => clearInterval(interval)
-    }, [taskName, taskStatus?.running])
+        if (taskStatus?.running) {
+            const interval = setInterval(() => {
+                loadTaskStatus()
+            }, 2000) // Poll every 2 seconds
+            setPollingInterval(interval)
+            return () => clearInterval(interval)
+        } else if (pollingInterval) {
+            clearInterval(pollingInterval)
+            setPollingInterval(null)
+        }
+    }, [taskStatus?.running])
 
     const loadTask = async () => {
         try {
