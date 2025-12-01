@@ -5,6 +5,7 @@ import { taskAPI, externalAPI, chatAPI } from '../api/client'
 import api from '../api/client'
 import SourceSelector from '../components/SourceSelector'
 import ScheduleEditor from '../components/ScheduleEditor'
+import { cronToHumanReadable } from '../utils/cronUtils'
 import './TaskDetail.css'
 import './TaskDetailExtras.css'
 
@@ -59,7 +60,6 @@ function TaskDetail() {
 
     // Task execution status polling
     const [taskStatus, setTaskStatus] = useState<any>(null)
-    const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
 
     useEffect(() => {
         if (taskName) {
@@ -69,19 +69,19 @@ function TaskDetail() {
         }
     }, [taskName])
 
-    // Poll task status when running
+    // Continuous polling to detect scheduler-triggered tasks
     useEffect(() => {
-        if (taskStatus?.running) {
-            const interval = setInterval(() => {
-                loadTaskStatus()
-            }, 2000) // Poll every 2 seconds
-            setPollingInterval(interval)
-            return () => clearInterval(interval)
-        } else if (pollingInterval) {
-            clearInterval(pollingInterval)
-            setPollingInterval(null)
-        }
-    }, [taskStatus?.running])
+        if (!taskName) return
+
+        // Poll more frequently when task is running, less frequently when idle
+        const pollInterval = taskStatus?.running ? 2000 : 10000
+
+        const interval = setInterval(() => {
+            loadTaskStatus()
+        }, pollInterval)
+
+        return () => clearInterval(interval)
+    }, [taskName, taskStatus?.running])
 
     const loadTask = async () => {
         try {
@@ -458,8 +458,12 @@ function TaskDetail() {
                                 </div>
                                 <div className="schedule-details">
                                     <div className="schedule-detail-item">
-                                        <span className="label">Cron Expression:</span>
-                                        <code>{task.schedule.cron}</code>
+                                        <span className="label">执行计划:</span>
+                                        <span className="schedule-description">{cronToHumanReadable(task.schedule.cron)}</span>
+                                    </div>
+                                    <div className="schedule-detail-item">
+                                        <span className="label">Cron 表达式:</span>
+                                        <code className="cron-expression">{task.schedule.cron}</code>
                                     </div>
                                 </div>
                             </>

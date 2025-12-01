@@ -47,7 +47,8 @@ class SchedulerDaemon:
                     CronTrigger.from_crontab(cron_expr),
                     args=[task.name],
                     id=job_id,
-                    replace_existing=True
+                    replace_existing=True,
+                    misfire_grace_time=60  # 允许在 60 秒内执行错过的任务
                 )
                 logger.info(f"已添加任务: {task.name} (Cron: {cron_expr})")
             except Exception as e:
@@ -65,6 +66,16 @@ class SchedulerDaemon:
         
         # 初始加载
         self.load_jobs()
+        
+        # 添加定期重载任务配置的作业（每分钟检查一次）
+        self.scheduler.add_job(
+            self.load_jobs,
+            'interval',
+            minutes=1,
+            id='reload_jobs',
+            replace_existing=True
+        )
+        logger.info("已添加配置重载任务 (每分钟)")
         
         # 启动调度器
         try:

@@ -62,18 +62,22 @@ function ScheduleEditor({ schedule, onChange, onSave, onCancel }: ScheduleEditor
             setScheduleType('interval')
             setIntervalValue(hours)
             setIntervalUnit('hours')
-        } else if (cron.match(/^0 \d+(,\d+)* \* \* \*$/)) {
-            // Daily: 0 9,14,18 * * *
-            const hours = cron.split(' ')[1].split(',')
-            const times = hours.map(h => `${h.padStart(2, '0')}:00`)
+        } else if (cron.match(/^\d+ \d+(,\d+)* \* \* \*$/)) {
+            // Daily with minute precision: 35 6,14,18 * * *
+            const parts = cron.split(' ')
+            const minute = parts[0]
+            const hours = parts[1].split(',')
+            const times = hours.map(h => `${h.padStart(2, '0')}:${minute.padStart(2, '0')}`)
             setScheduleType('daily')
             setDailyTimes(times)
-        } else if (cron.match(/^0 \d+ \* \* \d+(,\d+)*$/)) {
-            // Weekly: 0 9 * * 1,3,5
-            const hour = cron.split(' ')[1]
-            const days = cron.split(' ')[4].split(',').map(d => parseInt(d))
+        } else if (cron.match(/^\d+ \d+ \* \* \d+(,\d+)*$/)) {
+            // Weekly with minute precision: 35 10 * * 1,3,5
+            const parts = cron.split(' ')
+            const minute = parts[0]
+            const hour = parts[1]
+            const days = parts[4].split(',').map(d => parseInt(d))
             setScheduleType('weekly')
-            setWeeklyTime(`${hour.padStart(2, '0')}:00`)
+            setWeeklyTime(`${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`)
             setWeeklyDays(days)
         } else {
             setScheduleType('custom')
@@ -92,12 +96,19 @@ function ScheduleEditor({ schedule, onChange, onSave, onCancel }: ScheduleEditor
                     return `0 */${intervalValue} * * *`
                 }
             case 'daily':
+                // Support multiple times with minute precision
+                // For single time: "35 6 * * *" (6:35 AM)
+                // For multiple times: need separate cron entries, but we'll use first time's minute for all
+                const firstTime = dailyTimes[0].split(':')
+                const minute = parseInt(firstTime[1] || '0')
                 const hours = dailyTimes.map(t => parseInt(t.split(':')[0])).join(',')
-                return `0 ${hours} * * *`
+                return `${minute} ${hours} * * *`
             case 'weekly':
-                const hour = parseInt(weeklyTime.split(':')[0])
+                const timeParts = weeklyTime.split(':')
+                const weeklyMinute = parseInt(timeParts[1] || '0')
+                const weeklyHour = parseInt(timeParts[0])
                 const days = weeklyDays.join(',')
-                return `0 ${hour} * * ${days}`
+                return `${weeklyMinute} ${weeklyHour} * * ${days}`
             case 'custom':
                 return customCron
             default:

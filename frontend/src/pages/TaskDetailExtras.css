@@ -459,15 +459,22 @@
 .schedule-detail-item .label {
     font-weight: 500;
     color: var(--text-secondary);
-    min-width: 140px;
+    min-width: 100px;
 }
 
-.schedule-detail-item code {
+.schedule-detail-item .schedule-description {
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.schedule-detail-item code.cron-expression {
     background: var(--bg-secondary);
     padding: var(--space-xs) var(--space-sm);
     border-radius: var(--radius-sm);
     font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    color: var(--color-text-tertiary);
 }
 
 /* Schedule Modal */

@@ -5,7 +5,7 @@ locked: true
 name: stock-news
 scene: 一个2级市场的基金经理的参考新闻，需要涵盖国内外的新闻大事，政治，经济，科技，最好还有研报，还有美股的新闻
 schedule:
-  cron: 0 9 * * *
+  cron: 50 13 * * *
   custom_range:
     end: null
     start: null
@@ -113,13 +113,13 @@ sources:
   url: null
 status:
   current_status: success
-  enabled: false
+  enabled: true
   last_error: null
-  last_run: '2025-11-30T11:01:04.087758'
-  last_success_count: 6
+  last_run: '2025-12-01T14:02:41.725510'
+  last_success_count: 86
   next_run: null
   progress: null
   running: false
-  total_runs: 3
+  total_runs: 4
 weaviate:
   collection: Task_4678f41b9b07465083cca3f169452dab
