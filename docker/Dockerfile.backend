@@ -1,5 +1,6 @@
 # Backend API Dockerfile
-FROM python:3.11-slim
+# Support both AMD64 and ARM64
+FROM --platform=$BUILDPLATFORM python:3.11-slim
 
 WORKDIR /app
 

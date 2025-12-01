@@ -1,5 +1,6 @@
 # Frontend Dockerfile (Multi-stage build)
-FROM node:18-alpine AS builder
+# Support both AMD64 and ARM64
+FROM --platform=$BUILDPLATFORM node:18-alpine AS builder
 
 WORKDIR /app
 
@@ -16,7 +17,8 @@ COPY frontend/ .
 RUN npm run build
 
 # Production stage with Nginx
-FROM nginx:alpine
+# Support both AMD64 and ARM64
+FROM --platform=$TARGETPLATFORM nginx:alpine
 
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
