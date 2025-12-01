@@ -2,6 +2,14 @@
 
 ## 🚀 快速开始
 
+### 架构支持
+
+✅ **支持多架构**:
+- `linux/amd64` (x86_64) - Intel/AMD 处理器
+- `linux/arm64` (ARM) - Apple Silicon M1/M2, ARM 服务器
+
+Docker 会自动检测并使用正确的架构。
+
 ### 方法一：使用部署脚本（推荐）
 
 ```bash
@@ -25,14 +33,31 @@
 cp config/.env.example config/.env
 vim config/.env  # 填入 API Keys
 
-# 2. 启动所有服务
+# 2. 启动所有服务（自动检测架构）
 docker-compose up -d
+
+# 或指定架构
+DOCKER_PLATFORM=linux/amd64 docker-compose up -d  # AMD64
+DOCKER_PLATFORM=linux/arm64 docker-compose up -d  # ARM64
 
 # 3. 查看日志
 docker-compose logs -f
 
 # 4. 停止服务
 docker-compose down
+```
+
+### 方法三：多架构构建（高级）
+
+```bash
+# 使用 buildx 构建多架构镜像
+./docker/build-multiarch.sh
+
+# 选项：
+#   1) 当前平台
+#   2) AMD64 only
+#   3) ARM64 only
+#   4) 同时构建 AMD64 + ARM64
 ```
 
 ## 📦 服务说明
@@ -66,6 +91,34 @@ TOPHUB_API_KEY=xxx
 
 # Weaviate 配置（可选，默认使用 Docker 内部服务）
 WEAVIATE_URL=http://weaviate:8080
+```
+
+### 指定架构
+
+默认自动检测架构，也可以手动指定：
+
+**方式 1: 环境变量**
+```bash
+# AMD64 (x86_64)
+export DOCKER_PLATFORM=linux/amd64
+docker-compose up -d
+
+# ARM64
+export DOCKER_PLATFORM=linux/arm64
+docker-compose up -d
+```
+
+**方式 2: .env.docker 文件**
+```bash
+# 复制配置模板
+cp .env.docker.example .env.docker
+
+# 编辑配置
+vim .env.docker
+# 设置: DOCKER_PLATFORM=linux/amd64 或 linux/arm64
+
+# 加载配置启动
+docker-compose --env-file .env.docker up -d
 ```
 
 ### 修改端口

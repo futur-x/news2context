@@ -35,7 +35,11 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
+      platforms:
+        - linux/amd64
+        - linux/arm64
     container_name: news2context-backend
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     ports:
       - "8043:8043"
     volumes:
@@ -60,7 +64,11 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.scheduler
+      platforms:
+        - linux/amd64
+        - linux/arm64
     container_name: news2context-scheduler
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     volumes:
       - ./config:/app/config
       - ./logs:/app/logs
@@ -78,7 +86,11 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.frontend
+      platforms:
+        - linux/amd64
+        - linux/arm64
     container_name: news2context-frontend
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     ports:
       - "8042:8042"
     depends_on:
