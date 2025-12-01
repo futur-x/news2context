@@ -78,14 +78,11 @@ async def browse_knowledge_base(
     
     
     try:
-        # 首先获取总数量（不分页）
-        count_response = collection_manager.client.query.aggregate(task.collection_name).with_meta_count().do()
-        total_count = 0
-        if 'data' in count_response and 'Aggregate' in count_response['data']:
-            aggregate_data = count_response['data']['Aggregate'].get(task.collection_name, [])
-            if aggregate_data and len(aggregate_data) > 0:
-                total_count = aggregate_data[0].get('meta', {}).get('count', 0)
-        
+        # 性能优化：跳过 aggregate 查询（太慢），使用估算值
+        # 前端可以根据返回的 items 数量判断是否还有更多数据
+        # 如果返回的 items < limit，说明已经到底了
+        total_count = -1  # -1 表示未统计，前端显示 "加载更多" 而不是分页
+
         # 查询所有内容（分页）
         # 只查询 NewsChunk Schema 中实际存在的字段
         properties = [
