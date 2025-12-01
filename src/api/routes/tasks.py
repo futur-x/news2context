@@ -13,13 +13,24 @@ router = APIRouter()
 @router.get("/tasks", response_model=TaskListResponse)
 async def list_tasks():
     """获取所有任务"""
+    import time
+    start = time.time()
+
     manager = TaskManager()
+    t1 = time.time()
+    logger.info(f"[PERF] TaskManager init: {t1-start:.3f}s")
+
     tasks = manager.list_tasks()
-    
+    t2 = time.time()
+    logger.info(f"[PERF] list_tasks: {t2-t1:.3f}s")
+
     task_details = []
     for task in tasks:
         task_details.append(_convert_task_to_model(task))
-        
+    t3 = time.time()
+    logger.info(f"[PERF] convert to model: {t3-t2:.3f}s")
+    logger.info(f"[PERF] TOTAL: {t3-start:.3f}s")
+
     return TaskListResponse(
         tasks=task_details,
         total=len(task_details)
