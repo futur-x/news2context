@@ -99,10 +99,13 @@ class SmartChunker:
                 f"{current_length} 字符"
             )
         
-        logger.success(
-            f"切割完成: {len(articles)} 篇文章 → {len(chunks)} 个 chunks "
-            f"(平均 {len(articles)/len(chunks):.1f} 篇/chunk)"
-        )
+        if chunks:
+            logger.success(
+                f"切割完成: {len(articles)} 篇文章 → {len(chunks)} 个 chunks "
+                f"(平均 {len(articles)/len(chunks):.1f} 篇/chunk)"
+            )
+        else:
+            logger.warning("切割完成: 没有生成任何 chunks（可能所有文章都被过滤或采集失败）")
         
         return chunks
     

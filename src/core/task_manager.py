@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from loguru import logger
+import uuid
 
 
 class TaskConfig:
@@ -187,48 +188,101 @@ class TaskManager:
             logger.warning(f"任务不存在: {name}")
             return False
         
+        # 获取任务配置以获取 collection 名称
+        try:
+            task = self.get_task(name)
+            if task and task.collection_name: # Changed task.collection to task.collection_name
+                # 删除 Weaviate collection
+                from ..storage.weaviate_client import get_weaviate_client
+                client = get_weaviate_client()
+                try:
+                    client.collections.delete(task.collection_name) # Changed task.collection to task.collection_name
+                    logger.info(f"已删除 Weaviate collection: {task.collection_name}") # Changed task.collection to task.collection_name
+                except Exception as e:
+                    logger.warning(f"删除 Weaviate collection 失败: {e}")
+        except Exception as e:
+            logger.warning(f"获取任务配置失败: {e}")
+        
+        # 删除任务配置文件
         task_file.unlink()
         logger.success(f"任务已删除: {name}")
         return True
     
-    def update_task_status(
-        self,
-        name: str,
-        last_run: Optional[datetime] = None,
-        next_run: Optional[datetime] = None,
-        error: Optional[str] = None
-    ) -> bool:
+    def update_task(self, name: str, updates: Dict[str, Any]) -> TaskConfig:
         """
-        更新任务状态
+        更新任务配置
         
         Args:
             name: 任务名称
-            last_run: 最后运行时间
-            next_run: 下次运行时间
-            error: 错误信息
+            updates: 更新内容字典
             
         Returns:
-            是否成功更新
+            更新后的任务配置对象
+            
+        Raises:
+            ValueError: 任务不存在
         """
         task = self.get_task(name)
-        
         if not task:
-            logger.warning(f"任务不存在: {name}")
+            raise ValueError(f"任务 {name} 不存在")
+            
+        task_data = task.to_dict()
+        
+        # 更新支持的字段
+        if 'scene' in updates:
+            task_data['scene'] = updates['scene']
+        if 'sources' in updates:
+            logger.info(f"Updating sources for task {name}: {len(updates['sources'])} sources")
+            task_data['sources'] = updates['sources']
+        if 'schedule' in updates:
+            # 深度合并 schedule
+            if 'cron' in updates['schedule']:
+                task_data['schedule']['cron'] = updates['schedule']['cron']
+            if 'date_range' in updates['schedule']:
+                task_data['schedule']['date_range'] = updates['schedule']['date_range']
+            
+            # Handle enabled status which is stored in status.enabled
+            if 'enabled' in updates['schedule']:
+                if 'status' not in task_data:
+                    task_data['status'] = {}
+                task_data['status']['enabled'] = updates['schedule']['enabled']
+        if 'status' in updates and 'enabled' in updates['status']:
+             task_data['status']['enabled'] = updates['status']['enabled']
+             
+        # 保存更新
+        self._save_task(name, task_data)
+        logger.info(f"任务已更新: {name}")
+        
+        return TaskConfig(task_data)
+
+    def update_task_status(
+        self,
+        name: str,
+        status_updates: Dict[str, Any]
+    ) -> bool:
+        """
+        更新任务状态（支持所有状态字段）
+        
+        Args:
+            name: 任务名称
+            status_updates: 状态更新字典
+            
+        Returns:
+            是否更新成功
+        """
+        task = self.get_task(name)
+        if not task:
+            logger.error(f"任务 {name} 不存在")
             return False
+            
+        task_data = task.to_dict()
         
-        # 更新状态
-        if last_run:
-            task.status['last_run'] = last_run.isoformat()
-            task.status['total_runs'] = task.status.get('total_runs', 0) + 1
-        
-        if next_run:
-            task.status['next_run'] = next_run.isoformat()
-        
-        if error:
-            task.status['last_error'] = error
-        
-        # 保存
-        self._save_task(name, task.to_dict())
+        # 更新状态字段
+        for key, value in status_updates.items():
+            task_data['status'][key] = value
+            
+        # 保存更新
+        self._save_task(name, task_data)
         logger.info(f"任务状态已更新: {name}")
         return True
     
@@ -269,13 +323,14 @@ class TaskManager:
     def _generate_collection_name(self, task_name: str) -> str:
         """
         生成 Weaviate Collection 名称
+        使用 UUID 确保唯一性和合规性 (Task_<uuid>)
         
         Args:
-            task_name: 任务名称
+            task_name: 任务名称 (仅用于记录，不用于生成 ID)
             
         Returns:
-            Collection 名称（首字母大写）
+            Collection 名称
         """
-        # 移除特殊字符，转换为小写，然后首字母大写
-        clean_name = task_name.replace('-', '_').replace(' ', '_').lower()
-        return f"{clean_name.capitalize()}_db"
+        # 生成唯一 ID
+        unique_id = uuid.uuid4().hex
+        return f"Task_{unique_id}"
