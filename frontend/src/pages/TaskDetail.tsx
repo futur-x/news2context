@@ -60,7 +60,7 @@ function TaskDetail() {
 
     // Task execution status polling
     const [taskStatus, setTaskStatus] = useState<any>(null)
-    const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null)
+    const [pollingInterval, setPollingInterval] = useState<number | null>(null)
 
     useEffect(() => {
         if (taskName) {

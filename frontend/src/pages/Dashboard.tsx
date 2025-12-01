@@ -48,11 +48,8 @@ function Dashboard() {
         }
     }
 
-    const handleTaskCreated = (taskName: string) => {
-        loadTasks()
-        // Redirect to the new task page
-        navigate(`/tasks/${taskName}`)
-    }
+    // Removed unused handleTaskCreated function
+    // Now using onSuccess callback in TaskWizard directly
 
     if (loading) {
         return (
