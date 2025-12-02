@@ -78,10 +78,18 @@ async def browse_knowledge_base(
     
     
     try:
-        # 性能优化：跳过 aggregate 查询（太慢），使用估算值
-        # 前端可以根据返回的 items 数量判断是否还有更多数据
-        # 如果返回的 items < limit，说明已经到底了
-        total_count = -1  # -1 表示未统计，前端显示 "加载更多" 而不是分页
+        # 获取总数量（使用 aggregate 查询）
+        total_count = 0
+        try:
+            count_response = collection_manager.client.query.aggregate(task.collection_name).with_meta_count().do()
+            if 'data' in count_response and 'Aggregate' in count_response['data']:
+                aggregate_data = count_response['data']['Aggregate'].get(task.collection_name, [])
+                if aggregate_data and len(aggregate_data) > 0:
+                    total_count = aggregate_data[0].get('meta', {}).get('count', 0)
+        except Exception as e:
+            print(f"Failed to get total count: {e}")
+            # 如果统计失败，返回 0 而不是 -1
+            total_count = 0
 
         # 查询所有内容（分页）
         # 只查询 NewsChunk Schema 中实际存在的字段
