@@ -66,17 +66,24 @@ docker-compose down
 
 | 服务 | 容器端口 | 主机端口 | 说明 |
 |------|----------|----------|------|
-| Frontend | 8042 | 8042 | React 前端界面 |
-| Backend | 8043 | 8043 | FastAPI 后端 API |
-| Weaviate | 8080 | 8080 | 向量数据库 |
+| Frontend | 8042 | 8042 | React 前端界面（唯一对外端口） |
+| Backend | 8043 | - | FastAPI 后端（仅 Docker 内网） |
+| Weaviate | 8080 | - | 向量数据库（仅 Docker 内网） |
 | Scheduler | - | - | 后台定时任务 |
+
+**安全设计**：
+- 只有前端 8042 端口暴露到公网
+- 后端 API 和 Weaviate 只在 Docker 内网通信
+- 所有 API 请求通过 Nginx 代理转发
+- 避免端口冲突和安全风险
 
 ### 访问地址
 
 - **前端界面**: http://localhost:8042
-- **后端 API**: http://localhost:8043
-- **API 文档**: http://localhost:8043/docs
-- **Weaviate 控制台**: http://localhost:8080/v1
+- **后端 API**: http://localhost:8042/api（通过 Nginx 代理）
+- **API 文档**: http://localhost:8042/api/docs（通过 Nginx 代理）
+
+**注意**：Weaviate 和后端 API 不再直接暴露，只能通过前端端口访问。
 
 ## ⚙️ 配置说明
 
