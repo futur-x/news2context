@@ -5,6 +5,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
 from datetime import datetime
+from loguru import logger
 from src.api.models import TaskDetail, TaskListResponse, CreateTaskRequest, UpdateTaskRequest, TaskSource, TaskStatus
 from src.core.task_manager import TaskManager
 
