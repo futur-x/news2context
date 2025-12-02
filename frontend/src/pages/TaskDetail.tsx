@@ -66,7 +66,8 @@ function TaskDetail() {
         if (taskName) {
             loadTask()
             loadTaskStatus()
-            loadKnowledgeBase()
+            // Delay loading KB content to avoid blocking initial page load
+            setTimeout(() => loadKnowledgeBase(), 100)
         }
     }, [taskName])
 
