@@ -254,7 +254,11 @@ function TaskDetail() {
         try {
             // Fetch source details to map hashids
             const settingsRes = await import('../api/client').then(m => m.settingsAPI.getTopHub())
+            console.log('[DEBUG] Settings API response:', settingsRes.data)
             const allSources = settingsRes.data.sources || []
+            console.log('[DEBUG] All sources count:', allSources.length)
+            console.log('[DEBUG] Sample source:', allSources[0])
+
             const newSourceObjects = allSources
                 .filter((s: any) => selectedNewSources.includes(s.hashid))
                 .map((s: any) => ({
