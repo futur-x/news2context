@@ -252,10 +252,10 @@ function TaskDetail() {
 
         setAddingSources(true)
         try {
-            // Fetch source details to map hashids
-            const settingsRes = await import('../api/client').then(m => m.settingsAPI.getTopHub())
-            console.log('[DEBUG] Settings API response:', settingsRes.data)
-            const allSources = settingsRes.data.sources || []
+            // Fetch source details to map hashids - use /sources endpoint instead of /settings
+            const sourcesRes = await import('../api/client').then(m => m.sourcesAPI.list())
+            console.log('[DEBUG] Sources API response:', sourcesRes.data)
+            const allSources = Array.isArray(sourcesRes.data) ? sourcesRes.data : []
             console.log('[DEBUG] All sources count:', allSources.length)
             console.log('[DEBUG] Sample source:', allSources[0])
 
