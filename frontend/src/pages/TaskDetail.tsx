@@ -267,8 +267,13 @@ function TaskDetail() {
             const existingHashIds = task.sources.map((s: any) => s.hashid)
             const sourcesToAdd = newSourceObjects.filter((s: any) => !existingHashIds.includes(s.hashid))
 
+            console.log('[DEBUG] Selected hashids:', selectedNewSources)
+            console.log('[DEBUG] Existing hashids:', existingHashIds)
+            console.log('[DEBUG] New source objects:', newSourceObjects)
+            console.log('[DEBUG] Sources to add:', sourcesToAdd)
+
             if (sourcesToAdd.length === 0) {
-                alert('Selected sources are already added')
+                alert('Selected sources are already added. Check console for details.')
                 setShowAddSourceModal(false)
                 return
             }
