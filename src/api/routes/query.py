@@ -61,49 +61,27 @@ async def search_news(request: SearchRequest):
     # 执行搜索
     for collection_name in collections_to_search:
         try:
-            # 使用混合搜索以支持 NewsChunk schema 和搜索模式
-            results = collection_manager.hybrid_search(
+            # 使用统一搜索接口（自动处理 NewsArticle 和 NewsChunk schema）
+            results = collection_manager.unified_search(
                 collection_name=collection_name,
                 query=request.query,
-                limit=request.limit,
-                alpha=alpha,
-                similarity_threshold=0.0  # 尽可能返回结果
+                limit=request.limit
             )
-            
-            # 转换结果
-            for item in results:
-                # 处理 Chunk Schema 或 Article Schema
-                if 'article_titles' in item: # 假设这是 Chunk Schema 的特征
-                    titles = item.get('article_titles', [])
-                    srcs = item.get('sources', [])
-                    urls = item.get('article_urls', [])
-                    
-                    title = titles[0] if titles else "无标题"
-                    if len(titles) > 1:
-                        title = f"{title} 等 {len(titles)} 篇文章"
-                    source_name = ", ".join(srcs[:2]) if srcs else "未知来源"
-                    url = urls[0] if urls else None
-                    published_at = item.get('created_at')
-                    content = item.get('content') # Chunk Schema 的内容
-                else: # 假设这是 Article Schema
-                    title = item.get('title', '无标题')
-                    source_name = item.get('source_name', '未知来源')
-                    url = item.get('url')
-                    published_at = item.get('published_at')
-                    content = item.get('content') # Article Schema 的内容
 
+            # 转换结果（unified_search 返回统一格式）
+            for item in results:
                 news_item = NewsItem(
-                    id=item.get('_additional', {}).get('id'),
-                    title=title,
-                    content=content,
-                    url=url,
-                    source_name=source_name,
-                    published_at=published_at,
-                    score=item.get('_additional', {}).get('score'),  # 使用 score 而不是 certainty
+                    id=item.get('id') or item.get('_additional', {}).get('id'),
+                    title=item.get('title', '无标题'),
+                    content=item.get('content', ''),  # 已经是拼接后的完整内容
+                    url=item.get('url'),
+                    source_name=item.get('source_name', '未知来源'),
+                    published_at=item.get('published_at'),
+                    score=item.get('_additional', {}).get('certainty', 0),  # unified_search 使用 certainty
                     task_name=item.get('task_name')
                 )
                 all_results.append(news_item)
-                
+
         except Exception as e:
             # 记录错误但继续搜索其他 Collection
             print(f"Error searching collection {collection_name}: {e}")

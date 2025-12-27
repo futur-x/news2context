@@ -92,10 +92,10 @@ class CollectionManager:
         ]
     }
     
-    # NewsChunk Schema 定义（智能切割）
+    # NewsChunk Schema 定义（单篇新闻智能切割）
     NEWS_CHUNK_SCHEMA = {
         "class": "NewsChunk",
-        "description": "新闻 Chunk（智能切割，多篇新闻合并）",
+        "description": "新闻 Chunk（单篇新闻智能切割，支持超长文章）",
         "vectorizer": "text2vec-openai",
         "moduleConfig": {
             "text2vec-openai": {
@@ -106,9 +106,9 @@ class CollectionManager:
         },
         "properties": [
             {
-                "name": "chunk_id",
+                "name": "article_id",
                 "dataType": ["string"],
-                "description": "Chunk 唯一标识",
+                "description": "文章唯一标识（用于关联同一篇文章的多个 chunks）",
                 "moduleConfig": {
                     "text2vec-openai": {
                         "skip": True
@@ -116,9 +116,74 @@ class CollectionManager:
                 }
             },
             {
+                "name": "chunk_index",
+                "dataType": ["int"],
+                "description": "当前 chunk 索引（从 0 开始）",
+                "moduleConfig": {
+                    "text2vec-openai": {
+                        "skip": True
+                    }
+                }
+            },
+            {
+                "name": "total_chunks",
+                "dataType": ["int"],
+                "description": "该文章总共的 chunks 数量",
+                "moduleConfig": {
+                    "text2vec-openai": {
+                        "skip": True
+                    }
+                }
+            },
+            {
+                "name": "title",
+                "dataType": ["text"],
+                "description": "文章标题"
+            },
+            {
                 "name": "content",
                 "dataType": ["text"],
-                "description": "Chunk 内容（多篇新闻合并）"
+                "description": "Chunk 内容（包含标题和索引信息）"
+            },
+            {
+                "name": "url",
+                "dataType": ["string"],
+                "description": "原文链接",
+                "moduleConfig": {
+                    "text2vec-openai": {
+                        "skip": True
+                    }
+                }
+            },
+            {
+                "name": "source_name",
+                "dataType": ["string"],
+                "description": "新闻源名称"
+            },
+            {
+                "name": "source_hashid",
+                "dataType": ["string"],
+                "description": "新闻源 hashid",
+                "moduleConfig": {
+                    "text2vec-openai": {
+                        "skip": True
+                    }
+                }
+            },
+            {
+                "name": "category",
+                "dataType": ["string"],
+                "description": "分类"
+            },
+            {
+                "name": "published_at",
+                "dataType": ["date"],
+                "description": "发布时间"
+            },
+            {
+                "name": "fetched_at",
+                "dataType": ["date"],
+                "description": "抓取时间"
             },
             {
                 "name": "task_name",
@@ -131,54 +196,9 @@ class CollectionManager:
                 }
             },
             {
-                "name": "categories",
-                "dataType": ["string[]"],
-                "description": "包含的分类"
-            },
-            {
-                "name": "sources",
-                "dataType": ["string[]"],
-                "description": "包含的新闻源"
-            },
-            {
-                "name": "article_titles",
-                "dataType": ["string[]"],
-                "description": "包含的新闻标题"
-            },
-            {
-                "name": "article_count",
-                "dataType": ["int"],
-                "description": "包含的新闻数量",
-                "moduleConfig": {
-                    "text2vec-openai": {
-                        "skip": True
-                    }
-                }
-            },
-            {
-                "name": "char_count",
-                "dataType": ["int"],
-                "description": "字符数",
-                "moduleConfig": {
-                    "text2vec-openai": {
-                        "skip": True
-                    }
-                }
-            },
-            {
-                "name": "article_urls",
-                "dataType": ["string[]"],
-                "description": "包含的文章链接",
-                "moduleConfig": {
-                    "text2vec-openai": {
-                        "skip": True
-                    }
-                }
-            },
-            {
-                "name": "created_at",
-                "dataType": ["date"],
-                "description": "创建时间"
+                "name": "excerpt",
+                "dataType": ["text"],
+                "description": "摘要"
             }
         ]
     }
@@ -540,7 +560,229 @@ class CollectionManager:
         except Exception as e:
             logger.error(f"搜索失败: {str(e)}")
             return []
-    
+
+    def unified_search(
+        self,
+        collection_name: str,
+        query: str,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        统一搜索接口：自动处理 NewsArticle 和 NewsChunk 两种 schema
+
+        - 如果是 NewsArticle：直接返回搜索结果
+        - 如果是 NewsChunk：按 article_id 分组，拼接同一文章的所有 chunks
+
+        Args:
+            collection_name: Collection 名称
+            query: 查询文本
+            limit: 返回数量（最终文章数）
+
+        Returns:
+            统一格式的新闻列表，每篇文章包含完整内容
+        """
+        collection_name = self._format_class_name(collection_name)
+
+        if not self.collection_exists(collection_name):
+            logger.error(f"Collection 不存在: {collection_name}")
+            return []
+
+        # 检测 schema 类型
+        try:
+            schema = self.client.schema.get(collection_name)
+            properties = [p['name'] for p in schema['properties']]
+            is_chunk_schema = 'article_id' in properties and 'chunk_index' in properties
+
+            if not is_chunk_schema:
+                # NewsArticle schema：直接搜索
+                logger.debug(f"使用 NewsArticle schema 搜索")
+                return self.search_news(collection_name, query, limit)
+            else:
+                # NewsChunk schema：搜索 + 分组 + 拼接
+                logger.debug(f"使用 NewsChunk schema 搜索（需要分组拼接）")
+                return self._search_and_merge_chunks(collection_name, query, limit)
+
+        except Exception as e:
+            logger.error(f"统一搜索失败: {str(e)}")
+            return []
+
+    def _search_and_merge_chunks(
+        self,
+        collection_name: str,
+        query: str,
+        limit: int
+    ) -> List[Dict[str, Any]]:
+        """
+        搜索 chunks 并按 article_id 分组拼接
+
+        Args:
+            collection_name: Collection 名称
+            query: 查询文本
+            limit: 最终文章数量
+
+        Returns:
+            拼接后的文章列表
+        """
+        try:
+            # 第一步：搜索 chunks（多取一些以保证有足够的文章）
+            search_limit = limit * 5  # 假设平均每篇文章 2-3 个 chunks
+
+            result = (
+                self.client.query
+                .get(collection_name, [
+                    "article_id", "chunk_index", "total_chunks",
+                    "title", "content", "url", "source_name",
+                    "category", "published_at", "excerpt", "task_name"
+                ])
+                .with_near_text({"concepts": [query]})
+                .with_limit(search_limit)
+                .with_additional(["certainty", "id"])
+                .do()
+            )
+
+            chunks = result['data']['Get'].get(collection_name, [])
+            if not chunks:
+                return []
+
+            logger.debug(f"搜索到 {len(chunks)} 个 chunks")
+
+            # 第二步：提取匹配文章的 article_id
+            matched_article_ids = set()
+            article_scores = {}  # 记录每篇文章的最高得分
+
+            for chunk in chunks:
+                article_id = chunk.get('article_id')
+                certainty = chunk.get('_additional', {}).get('certainty', 0)
+
+                if article_id:
+                    matched_article_ids.add(article_id)
+                    # 保留最高得分
+                    if article_id not in article_scores or certainty > article_scores[article_id]:
+                        article_scores[article_id] = certainty
+
+            logger.debug(f"匹配到 {len(matched_article_ids)} 篇文章")
+
+            # 第三步：对每篇匹配的文章，查询所有 chunks 并拼接
+            merged_articles = []
+
+            for article_id in list(matched_article_ids)[:limit]:  # 限制文章数量
+                # 查询该文章的所有 chunks
+                article_chunks = self._get_all_chunks_by_article_id(collection_name, article_id)
+
+                if not article_chunks:
+                    logger.warning(f"文章 {article_id} 的 chunks 查询失败")
+                    continue
+
+                # 按 chunk_index 排序
+                article_chunks.sort(key=lambda x: x.get('chunk_index', 0))
+
+                # 拼接完整内容（去掉每个 chunk 的元数据头和索引标记）
+                full_content = self._merge_chunk_contents(article_chunks)
+
+                # 使用第一个 chunk 的元数据
+                first_chunk = article_chunks[0]
+
+                merged_article = {
+                    "id": article_id,
+                    "title": first_chunk.get('title', ''),
+                    "content": full_content,
+                    "url": first_chunk.get('url', ''),
+                    "source_name": first_chunk.get('source_name', ''),
+                    "category": first_chunk.get('category', ''),
+                    "published_at": first_chunk.get('published_at', ''),
+                    "excerpt": first_chunk.get('excerpt', ''),
+                    "task_name": first_chunk.get('task_name', ''),
+                    "_additional": {
+                        "certainty": article_scores.get(article_id, 0),
+                        "chunk_count": len(article_chunks)
+                    }
+                }
+
+                merged_articles.append(merged_article)
+
+            # 按相关度排序
+            merged_articles.sort(key=lambda x: x['_additional']['certainty'], reverse=True)
+
+            logger.info(f"拼接完成: {len(merged_articles)} 篇文章")
+
+            return merged_articles
+
+        except Exception as e:
+            logger.error(f"搜索并合并 chunks 失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def _get_all_chunks_by_article_id(
+        self,
+        collection_name: str,
+        article_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        根据 article_id 查询该文章的所有 chunks
+
+        Args:
+            collection_name: Collection 名称
+            article_id: 文章 ID
+
+        Returns:
+            该文章的所有 chunks
+        """
+        try:
+            result = (
+                self.client.query
+                .get(collection_name, [
+                    "article_id", "chunk_index", "total_chunks",
+                    "title", "content", "url", "source_name",
+                    "category", "published_at", "excerpt", "task_name"
+                ])
+                .with_where({
+                    "path": ["article_id"],
+                    "operator": "Equal",
+                    "valueString": article_id
+                })
+                .with_limit(100)  # 假设单篇文章最多 100 个 chunks
+                .do()
+            )
+
+            chunks = result['data']['Get'].get(collection_name, [])
+            return chunks
+
+        except Exception as e:
+            logger.error(f"查询文章 {article_id} 的 chunks 失败: {str(e)}")
+            return []
+
+    def _merge_chunk_contents(self, chunks: List[Dict[str, Any]]) -> str:
+        """
+        拼接多个 chunks 的内容，去掉重复的元数据头
+
+        Args:
+            chunks: 已排序的 chunk 列表
+
+        Returns:
+            拼接后的完整内容
+        """
+        if not chunks:
+            return ""
+
+        # 第一个 chunk 保留完整内容（包含元数据头）
+        merged_parts = [chunks[0].get('content', '')]
+
+        # 后续 chunks 去掉元数据头，只保留正文
+        for chunk in chunks[1:]:
+            content = chunk.get('content', '')
+
+            # 尝试去掉元数据头（寻找【第 X/Y 部分】标记后的内容）
+            if '【第' in content and '部分】' in content:
+                # 提取【第 X/Y 部分】之后的内容
+                parts = content.split('部分】', 1)
+                if len(parts) > 1:
+                    content = parts[1].strip()
+
+            merged_parts.append(content)
+
+        return '\n\n'.join(merged_parts)
+
     def delete_item(self, collection_name: str, item_id: str) -> bool:
         """
         删除指定的项目

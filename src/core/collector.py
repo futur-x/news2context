@@ -10,7 +10,7 @@ from datetime import datetime
 from loguru import logger
 
 from src.utils.markdown_parser import MarkdownParser
-from src.utils.chunker import SmartChunker
+from src.utils.chunker import ArticleChunker
 
 from src.core.task_manager import TaskManager
 from src.storage.weaviate_client import CollectionManager
@@ -226,27 +226,30 @@ class NewsCollector:
                     return 0
             # ===================
             
-            # 智能切割成 chunks
-            max_chunk_size = self.config.get('weaviate.chunking.max_chunk_size', 3000)
-            chunker = SmartChunker(max_chunk_size=max_chunk_size)
-            chunks = chunker.create_chunks(articles)
-            
+            # 智能切割成 chunks（单篇新闻切割）
+            max_tokens = self.config.get('weaviate.chunking.max_tokens', 6000)
+            chunker = ArticleChunker(max_tokens=max_tokens)
+            chunks = chunker.chunk_articles(articles, task_name)
+
             logger.info(f"切割完成: {len(articles)} 篇新闻 → {len(chunks)} 个 chunks")
-            
+
             # 准备 chunk 数据
             chunk_data_list = []
             for chunk in chunks:
                 chunk_data = {
-                    "chunk_id": chunk.chunk_id,
+                    "article_id": chunk.article_id,
+                    "chunk_index": chunk.chunk_index,
+                    "total_chunks": chunk.total_chunks,
+                    "title": chunk.title,
                     "content": chunk.content,
-                    "task_name": task_name,
-                    "categories": chunk.metadata["categories"],
-                    "sources": chunk.metadata["sources"],
-                    "article_titles": chunk.metadata["article_titles"],
-                    "article_urls": chunk.metadata.get("article_urls", []),  # 新增字段
-                    "article_count": chunk.metadata["article_count"],
-                    "char_count": chunk.metadata["char_count"],
-                    "created_at": datetime.now().isoformat() + "Z"
+                    "url": chunk.url,
+                    "source_name": chunk.source_name,
+                    "source_hashid": chunk.source_hashid,
+                    "category": chunk.category,
+                    "published_at": chunk.published_at,
+                    "fetched_at": chunk.fetched_at,
+                    "task_name": chunk.task_name,
+                    "excerpt": chunk.excerpt
                 }
                 chunk_data_list.append(chunk_data)
             

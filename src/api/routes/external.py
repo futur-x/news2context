@@ -146,35 +146,36 @@ async def query_knowledge_base(
         else:  # hybrid
             alpha = request.alpha  # 使用用户指定的权重
         
-        results = collection_manager.hybrid_search(
+        # 使用统一搜索接口（自动处理 NewsArticle 和 NewsChunk schema）
+        results = collection_manager.unified_search(
             collection_name=task.collection_name,
             query=request.query,
-            limit=request.limit,
-            alpha=alpha,
-            similarity_threshold=request.min_score  # 使用用户指定的最低分数
+            limit=request.limit
         )
-        
+
         # 格式化结果
         formatted_results = []
         for item in results:
-            score = item.get("_additional", {}).get("score")
-            
-            # 转换 score 为 float（可能是字符串）
+            # unified_search 返回的是 certainty
+            certainty = item.get("_additional", {}).get("certainty", 0)
+
+            # 转换 certainty 为 float
             try:
-                score_float = float(score) if score is not None else 0.0
+                score_float = float(certainty) if certainty is not None else 0.0
             except (ValueError, TypeError):
                 score_float = 0.0
-            
-            # 再次过滤低分结果（双重保险）
+
+            # 过滤低分结果
             if score_float < request.min_score:
                 continue
-            
+
             formatted_results.append({
-                "content": item.get("content"),
+                "content": item.get("content"),  # 已经是拼接后的完整内容
                 "score": score_float,
-                "article_titles": item.get("article_titles", []),
-                "sources": item.get("sources", []),
-                "categories": item.get("categories", [])
+                "title": item.get("title"),
+                "url": item.get("url"),
+                "source_name": item.get("source_name"),
+                "category": item.get("category"),
             })
         
         return ExternalQueryResponse(
