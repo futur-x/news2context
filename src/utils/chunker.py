@@ -151,10 +151,18 @@ class ArticleChunker:
             f"# {article.title}",
             f"",
             f"**来源**: {article.source} | **分类**: {article.category}",
-            f"**发布时间**: {article.published_at}",
+        ]
+
+        # published_at 字段可能不存在（从 Markdown 解析的 Article 没有此字段）
+        published_at = getattr(article, 'published_at', None)
+        if published_at:
+            header_parts.append(f"**发布时间**: {published_at}")
+
+        header_parts.extend([
             f"**链接**: {article.url}",
             f"",
-        ]
+        ])
+
         return "\n".join(header_parts)
 
     def _create_single_chunk(
@@ -188,7 +196,7 @@ class ArticleChunker:
             source_name=article.source,
             source_hashid=getattr(article, 'source_hashid', ''),
             category=article.category,
-            published_at=article.published_at,
+            published_at=getattr(article, 'published_at', ''),
             fetched_at=getattr(article, 'fetched_at', ''),
             excerpt=getattr(article, 'excerpt', ''),
             task_name=task_name
@@ -274,7 +282,7 @@ class ArticleChunker:
                 source_name=article.source,
                 source_hashid=getattr(article, 'source_hashid', ''),
                 category=article.category,
-                published_at=article.published_at,
+                published_at=getattr(article, 'published_at', ''),
                 fetched_at=getattr(article, 'fetched_at', ''),
                 excerpt=getattr(article, 'excerpt', ''),
                 task_name=task_name
