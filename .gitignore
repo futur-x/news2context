@@ -44,3 +44,6 @@ output/
 # OS
 .DS_Store
 Thumbs.db
+
+# Production Config (schedules 目录包含线上配置，不提交到 Git)
+config/schedules/*.yaml
