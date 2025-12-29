@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 from loguru import logger
 
-from src.utils.markdown_parser import MarkdownParser
+from src.utils.markdown_parser import MarkdownParser, Article
 from src.utils.chunker import ArticleChunker
 
 from src.core.task_manager import TaskManager
@@ -203,10 +203,23 @@ class NewsCollector:
         # 6. 智能切割成 chunks
         if self.config.get('weaviate.chunking.enabled', True):
             logger.info("开始智能切割...")
-            
-            # 解析 Markdown，提取文章
-            parser = MarkdownParser()
-            articles = parser.parse_digest(markdown_path)
+
+            # 直接从 all_news_items 创建 Article 对象（保留日期信息）
+            articles = []
+            for item in all_news_items:
+                article = Article(
+                    title=item['title'],
+                    content=item['content'],
+                    category=item['category'],
+                    source=item['source_name'],
+                    url=item['url'],
+                    char_count=len(item['content']),
+                    published_at=item.get('published_at'),
+                    fetched_at=item.get('fetched_at'),
+                    source_hashid=item.get('source_hashid', ''),
+                    excerpt=item.get('excerpt', '')
+                )
+                articles.append(article)
             
             # === 数据去重逻辑 ===
             logger.info("正在检查重复数据...")

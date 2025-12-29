@@ -18,6 +18,10 @@ class Article:
     source: str             # 来源（华尔街见闻等）
     url: str                # 原文链接
     char_count: int         # 字符数
+    published_at: str = None  # 发布时间 (RFC3339 格式)
+    fetched_at: str = None    # 抓取时间 (RFC3339 格式)
+    source_hashid: str = ''   # 新闻源 hashid
+    excerpt: str = ''         # 摘要
 
 
 class MarkdownParser:

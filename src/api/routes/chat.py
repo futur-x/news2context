@@ -66,44 +66,28 @@ async def chat_with_knowledge_base(request: ChatRequest):
     )
     
     try:
-        # 搜索相关内容 - 使用 hybrid_search 方法
+        # 搜索相关内容 - 使用 unified_search 方法（自动处理 NewsChunk schema）
         search_config = config.get('weaviate.search', {})
-        alpha = search_config.get('hybrid_alpha', 0.75)
         max_results = search_config.get('max_results', 5)
-        similarity_threshold = search_config.get('similarity_threshold', 0.0) # 默认为 0.0，尽可能返回结果
-        
-        results = collection_manager.hybrid_search(
+
+        results = collection_manager.unified_search(
             collection_name=task.collection_name,
             query=request.message,
-            limit=max_results,
-            alpha=alpha,
-            similarity_threshold=similarity_threshold
+            limit=max_results
         )
         
-        # 构建上下文
+        # 构建上下文（unified_search 返回统一格式）
         context_parts = []
         sources = []
         for idx, item in enumerate(results, 1):
             content = item.get("content", "")
-            
-            # 处理 Chunk Schema
-            if 'article_titles' in item:
-                titles = item.get('article_titles', [])
-                srcs = item.get('sources', [])
-                
-                title = titles[0] if titles else "无标题"
-                if len(titles) > 1:
-                    title = f"{title} 等 {len(titles)} 篇文章"
-                source = ", ".join(srcs[:2]) if srcs else "未知来源"
-            else:
-                # 处理 Article Schema
-                title = item.get("title", "无标题")
-                source = item.get("source_name", "未知来源")
-            
+            title = item.get("title", "无标题")
+            source = item.get("source_name", "未知来源")
+
             context_parts.append(f"[文档 {idx}]\n标题: {title}\n来源: {source}\n内容: {content}\n")
             sources.append({
                 "content": content[:200] + "..." if len(content) > 200 else content,
-                "score": item.get("_additional", {}).get("score"),
+                "score": item.get("_additional", {}).get("certainty"),
                 "title": title,
                 "source": source
             })

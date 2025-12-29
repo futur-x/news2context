@@ -92,15 +92,19 @@ async def browse_knowledge_base(
             total_count = 0
 
         # 查询所有内容（分页）
-        # 只查询 NewsChunk Schema 中实际存在的字段
+        # 查询 NewsChunk Schema 的字段
         properties = [
-            "content", 
-            "article_titles",
-            "sources",
-            "article_urls",
-            "created_at",
+            "title",
+            "content",
+            "source_name",
+            "url",
+            "published_at",
+            "fetched_at",
             "task_name",
-            "categories"
+            "category",
+            "article_id",
+            "chunk_index",
+            "total_chunks"
         ]
         
         response = collection_manager.client.query.get(
@@ -114,26 +118,18 @@ async def browse_knowledge_base(
             for item in collection_data:
                 # 获取 ID
                 item_id = item.get('_additional', {}).get('id')
-                
-                # 处理 Chunk Schema
-                if 'article_titles' in item:
-                    titles = item.get('article_titles', [])
-                    sources = item.get('sources', [])
-                    urls = item.get('article_urls', [])
-                    
-                    title = titles[0] if titles else "无标题"
-                    if len(titles) > 1:
-                        title = f"{title} 等 {len(titles)} 篇文章"
-                        
-                    source_name = ", ".join(sources[:3]) if sources else "未知来源"
-                    url = urls[0] if urls else None
-                    published_at = item.get('created_at')
-                else:
-                    # 处理 Article Schema
-                    title = item.get('title', '无标题')
-                    source_name = item.get('source_name', '未知来源')
-                    url = item.get('url')
-                    published_at = item.get('published_at')
+
+                # 处理 NewsChunk Schema（新schema，单篇文章切割）
+                title = item.get('title', '无标题')
+                source_name = item.get('source_name', '未知来源')
+                url = item.get('url')
+                published_at = item.get('published_at')
+
+                # 如果是多 chunk 文章，在标题中显示 chunk 信息
+                chunk_index = item.get('chunk_index')
+                total_chunks = item.get('total_chunks')
+                if chunk_index is not None and total_chunks is not None and total_chunks > 1:
+                    title = f"{title} [第{chunk_index+1}/{total_chunks}部分]"
 
                 items.append(KnowledgeItem(
                     id=item_id,

@@ -235,18 +235,23 @@ class CollectionManager:
             logger.info(f"使用 Embedding 模型: {embedding_model}")
         
         # 创建客户端（增加启动超时时间）
+        # 配置超时时间（增加到 120 秒以应对慢速 embedding API）
+        timeout_config = (5, 120)  # (connect timeout, read timeout)
+
         if api_key:
             auth_config = weaviate.AuthApiKey(api_key=api_key)
             self.client = weaviate.Client(
                 url=weaviate_url,
                 auth_client_secret=auth_config,
-                startup_period=30,  # 增加启动超时到 30 秒
+                startup_period=30,
+                timeout_config=timeout_config,
                 additional_headers=additional_headers
             )
         else:
             self.client = weaviate.Client(
                 url=weaviate_url,
-                startup_period=30,  # 增加启动超时到 30 秒
+                startup_period=30,
+                timeout_config=timeout_config,
                 additional_headers=additional_headers
             )
         
@@ -901,12 +906,15 @@ class CollectionManager:
                             errors.append(err_msg)
                             logger.error(f"Weaviate Batch Error: {err_msg}")
 
-        # 配置 Batch
+        # 配置 Batch（增加 num_workers 以并行调用 embedding API）
         self.client.batch.configure(
             batch_size=batch_size,
             callback=check_batch_result,
-            num_workers=2
+            num_workers=4  # 增加到 4 以加速 embedding API 调用
         )
+
+        total_chunks = len(chunks)
+        logger.info(f"开始批量插入 {total_chunks} 个 chunks (batch_size={batch_size})...")
 
         try:
             with self.client.batch as batch:
@@ -917,7 +925,11 @@ class CollectionManager:
                             class_name=collection_name
                         )
                         success_count += 1
-                        
+
+                        # 每 20 个 chunks 输出一次进度
+                        if idx % 20 == 0 or idx == total_chunks:
+                            logger.info(f"进度: {idx}/{total_chunks} chunks ({idx*100//total_chunks}%)")
+
                     except Exception as e:
                         failed_count += 1
                         logger.error(f"添加 chunk #{idx} 失败: {str(e)}")

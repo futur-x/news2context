@@ -50,7 +50,7 @@ weaviate:
   api_key: ''
   batch:
     dynamic: true
-    size: 5
+    size: 2
     timeout_retries: 3
   chunking:
     enabled: true
@@ -62,4 +62,4 @@ weaviate:
     max_results: 5
     similarity_threshold: 0.3
     type: hybrid
-  url: http://weaviate:8080
+  url: http://localhost:38081

@@ -153,10 +153,9 @@ class ArticleChunker:
             f"**来源**: {article.source} | **分类**: {article.category}",
         ]
 
-        # published_at 字段可能不存在（从 Markdown 解析的 Article 没有此字段）
-        published_at = getattr(article, 'published_at', None)
-        if published_at:
-            header_parts.append(f"**发布时间**: {published_at}")
+        # 如果有发布时间，添加到元数据头
+        if article.published_at:
+            header_parts.append(f"**发布时间**: {article.published_at}")
 
         header_parts.extend([
             f"**链接**: {article.url}",
@@ -194,11 +193,11 @@ class ArticleChunker:
             content=content,
             url=article.url,
             source_name=article.source,
-            source_hashid=getattr(article, 'source_hashid', ''),
+            source_hashid=article.source_hashid,
             category=article.category,
-            published_at=getattr(article, 'published_at', ''),
-            fetched_at=getattr(article, 'fetched_at', ''),
-            excerpt=getattr(article, 'excerpt', ''),
+            published_at=article.published_at,
+            fetched_at=article.fetched_at,
+            excerpt=article.excerpt,
             task_name=task_name
         )
 
@@ -280,11 +279,11 @@ class ArticleChunker:
                 content=full_content,
                 url=article.url,
                 source_name=article.source,
-                source_hashid=getattr(article, 'source_hashid', ''),
+                source_hashid=article.source_hashid,
                 category=article.category,
-                published_at=getattr(article, 'published_at', ''),
-                fetched_at=getattr(article, 'fetched_at', ''),
-                excerpt=getattr(article, 'excerpt', ''),
+                published_at=article.published_at,
+                fetched_at=article.fetched_at,
+                excerpt=article.excerpt,
                 task_name=task_name
             )
             result.append(chunk)
@@ -385,9 +384,12 @@ class ArticleChunker:
                 logger.error(f"处理文章失败 [{article.title[:30]}...]: {e}")
                 continue
 
-        logger.success(
-            f"切割完成: {len(articles)} 篇文章 → {len(all_chunks)} 个 chunks "
-            f"(平均 {len(all_chunks)/len(articles):.1f} chunks/篇)"
-        )
+        if len(articles) > 0:
+            logger.success(
+                f"切割完成: {len(articles)} 篇文章 → {len(all_chunks)} 个 chunks "
+                f"(平均 {len(all_chunks)/len(articles):.1f} chunks/篇)"
+            )
+        else:
+            logger.warning("切割完成: 没有文章需要处理")
 
         return all_chunks
