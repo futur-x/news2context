@@ -26,11 +26,8 @@ COPY .dockerignore ./
 COPY .env.docker ./
 COPY .gitignore ./
 
-# Create empty directories for volume mounts
-RUN mkdir -p /app/config /app/logs /app/data /app/output
-
 # Note: config/, logs/, data/, output/ will be mounted as volumes
-# Do not copy them here to ensure volume mounts work correctly
+# Do NOT create these directories - let Docker handle them via volume mounts
 
 # Expose API port
 EXPOSE 8043
