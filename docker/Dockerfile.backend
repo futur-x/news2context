@@ -10,14 +10,24 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libxml2-dev \
     libxslt-dev \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy application code (exclude config, logs, data, output to allow volume mounts)
+COPY src/ ./src/
+COPY *.py ./
+COPY *.md ./
+COPY docker-compose.yml ./
+COPY .dockerignore ./
+COPY .env.docker ./
+COPY .gitignore ./
+
+# Note: config/, logs/, data/, output/ will be mounted as volumes
+# Do not copy them here to ensure volume mounts work correctly
 
 # Expose API port
 EXPOSE 8043
