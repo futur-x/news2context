@@ -43,9 +43,10 @@ class ExternalQueryResponse(BaseModel):
 class TokenInfo(BaseModel):
     """Token 信息"""
     token_hash: str
-    token_preview: str
+    token_preview: str  # 原始 token 预览 (n2kb_xxxx...yyyy)
     created_at: str
     last_used: Optional[str] = None
+    note: Optional[str] = None  # 可选备注
 
 class GenerateTokenResponse(BaseModel):
     """生成 Token 响应"""
@@ -197,20 +198,25 @@ async def generate_api_token():
     # 生成随机 Token
     token = f"n2kb_{secrets.token_urlsafe(32)}"
     token_hash = _hash_token(token)
-    
-    # 保存 Token
+
+    # 保存 Token（存储原始 token 的前后缀用于显示）
     token_data = _load_tokens()
     if "tokens" not in token_data:
         token_data["tokens"] = {}
-    
+
     from datetime import datetime
+    # 存储 token 预览: 前12个字符...后8个字符
+    token_preview = f"{token[:12]}...{token[-8:]}" if len(token) > 20 else token
+
     token_data["tokens"][token_hash] = {
+        "token_preview": token_preview,  # 存储原始 token 预览
         "created_at": datetime.now().isoformat(),
-        "last_used": None
+        "last_used": None,
+        "note": None  # 默认无备注
     }
-    
+
     _save_tokens(token_data)
-    
+
     return GenerateTokenResponse(
         token=token,
         message="Token generated successfully. Please save it securely - it won't be shown again."
@@ -224,11 +230,15 @@ async def list_api_tokens():
 
     result = []
     for token_hash, info in tokens.items():
+        # 优先使用存储的 token_preview，如果没有则使用 hash 预览（兼容旧数据）
+        token_preview = info.get("token_preview", f"{token_hash[:8]}...{token_hash[-8:]}")
+
         result.append(TokenInfo(
             token_hash=token_hash,
-            token_preview=f"{token_hash[:8]}...{token_hash[-8:]}",
+            token_preview=token_preview,
             created_at=info.get("created_at"),
-            last_used=info.get("last_used")
+            last_used=info.get("last_used"),
+            note=info.get("note")
         ))
 
     return result
@@ -247,3 +257,22 @@ async def delete_api_token(token_hash: str):
     _save_tokens(token_data)
 
     return {"success": True, "message": "Token deleted successfully"}
+
+class UpdateTokenNoteRequest(BaseModel):
+    """更新 Token 备注请求"""
+    note: Optional[str] = None
+
+@router.put("/external/tokens/{token_hash}/note")
+async def update_token_note(token_hash: str, request: UpdateTokenNoteRequest):
+    """更新指定 Token 的备注"""
+    token_data = _load_tokens()
+    tokens = token_data.get("tokens", {})
+
+    if token_hash not in tokens:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    tokens[token_hash]["note"] = request.note
+    token_data["tokens"] = tokens
+    _save_tokens(token_data)
+
+    return {"success": True, "message": "Token note updated successfully"}

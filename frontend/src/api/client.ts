@@ -36,6 +36,7 @@ export const externalAPI = {
     generateToken: () => api.post('/external/tokens'),
     listTokens: () => api.get('/external/tokens'),
     deleteToken: (tokenHash: string) => api.delete(`/external/tokens/${tokenHash}`),
+    updateTokenNote: (tokenHash: string, note: string | null) => api.put(`/external/tokens/${tokenHash}/note`, { note }),
     query: (taskName: string, data: any) => api.post(`/external/${taskName}/query`, data)
 }
 

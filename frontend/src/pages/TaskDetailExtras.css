@@ -572,6 +572,14 @@
     color: var(--color-text-tertiary);
 }
 
+.token-note {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding: 4px 0;
+    display: block;
+}
+
 .no-tokens {
     text-align: center;
     padding: var(--space-xl);

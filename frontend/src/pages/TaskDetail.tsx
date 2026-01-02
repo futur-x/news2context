@@ -26,6 +26,7 @@ interface TokenInfo {
     token_preview: string
     created_at: string
     last_used: string | null
+    note: string | null
 }
 
 function TaskDetail() {
@@ -34,6 +35,8 @@ function TaskDetail() {
     const [task, setTask] = useState<Task | null>(null)
     const [apiTokens, setApiTokens] = useState<TokenInfo[]>([])
     const [newToken, setNewToken] = useState<string>('')
+    const [editingTokenHash, setEditingTokenHash] = useState<string | null>(null)
+    const [editingNote, setEditingNote] = useState<string>('')
     const [loading, setLoading] = useState(true)
 
     // Search state
@@ -212,6 +215,27 @@ function TaskDetail() {
         } catch (error) {
             console.error('Failed to delete token:', error)
         }
+    }
+
+    const handleEditNote = (token: TokenInfo) => {
+        setEditingTokenHash(token.token_hash)
+        setEditingNote(token.note || '')
+    }
+
+    const handleSaveNote = async (tokenHash: string) => {
+        try {
+            await externalAPI.updateTokenNote(tokenHash, editingNote || null)
+            await fetchTokens()
+            setEditingTokenHash(null)
+            setEditingNote('')
+        } catch (error) {
+            console.error('Failed to update token note:', error)
+        }
+    }
+
+    const handleCancelEdit = () => {
+        setEditingTokenHash(null)
+        setEditingNote('')
     }
 
     const handleDeleteTask = () => {
@@ -631,18 +655,57 @@ function TaskDetail() {
                             {apiTokens.length > 0 ? (
                                 <div className="token-list">
                                     {apiTokens.map((token) => (
-                                        <div key={token.token_preview} className="token-item">
+                                        <div key={token.token_hash} className="token-item">
                                             <div className="token-info">
                                                 <code className="token-preview">{token.token_preview}</code>
-                                                <span className="token-date">Created: {new Date(token.created_at).toLocaleString()}</span>
-                                                {token.last_used && <span className="token-date">Last used: {new Date(token.last_used).toLocaleString()}</span>}
+                                                {editingTokenHash === token.token_hash ? (
+                                                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                                        <input
+                                                            type="text"
+                                                            className="input"
+                                                            value={editingNote}
+                                                            onChange={(e) => setEditingNote(e.target.value)}
+                                                            placeholder="Add a note (optional)"
+                                                            style={{ flex: 1 }}
+                                                        />
+                                                        <button
+                                                            className="btn btn-primary btn-sm"
+                                                            onClick={() => handleSaveNote(token.token_hash)}
+                                                        >
+                                                            Save
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm"
+                                                            onClick={handleCancelEdit}
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {token.note && <span className="token-note">{token.note}</span>}
+                                                        <span className="token-date">Created: {new Date(token.created_at).toLocaleString()}</span>
+                                                        {token.last_used && <span className="token-date">Last used: {new Date(token.last_used).toLocaleString()}</span>}
+                                                    </>
+                                                )}
                                             </div>
-                                            <button
-                                                className="btn btn-danger btn-sm"
-                                                onClick={() => handleDeleteToken(token.token_hash)}
-                                            >
-                                                Delete
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                {editingTokenHash !== token.token_hash && (
+                                                    <button
+                                                        className="btn btn-sm"
+                                                        onClick={() => handleEditNote(token)}
+                                                        title="Edit note"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="btn btn-danger btn-sm"
+                                                    onClick={() => handleDeleteToken(token.token_hash)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
