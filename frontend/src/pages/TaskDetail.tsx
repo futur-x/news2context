@@ -22,6 +22,7 @@ interface Task {
 }
 
 interface TokenInfo {
+    token_hash: string
     token_preview: string
     created_at: string
     last_used: string | null
@@ -638,7 +639,7 @@ function TaskDetail() {
                                             </div>
                                             <button
                                                 className="btn btn-danger btn-sm"
-                                                onClick={() => handleDeleteToken(token.token_preview.split('...')[0] + token.token_preview.split('...')[1].replace(/\./g, ''))}
+                                                onClick={() => handleDeleteToken(token.token_hash)}
                                             >
                                                 Delete
                                             </button>

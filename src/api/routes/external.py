@@ -42,6 +42,7 @@ class ExternalQueryResponse(BaseModel):
 
 class TokenInfo(BaseModel):
     """Token 信息"""
+    token_hash: str
     token_preview: str
     created_at: str
     last_used: Optional[str] = None
@@ -224,6 +225,7 @@ async def list_api_tokens():
     result = []
     for token_hash, info in tokens.items():
         result.append(TokenInfo(
+            token_hash=token_hash,
             token_preview=f"{token_hash[:8]}...{token_hash[-8:]}",
             created_at=info.get("created_at"),
             last_used=info.get("last_used")
