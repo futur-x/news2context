@@ -36,9 +36,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
-      platforms:
-        - linux/amd64
-        - linux/arm64
     container_name: news2context-backend
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     # 不暴露到宿主机，仅通过 Nginx (8042) 代理访问
@@ -67,9 +64,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.scheduler
-      platforms:
-        - linux/amd64
-        - linux/arm64
     container_name: news2context-scheduler
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     volumes:

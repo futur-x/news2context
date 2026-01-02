@@ -21,11 +21,18 @@ interface Task {
     }
 }
 
+interface TokenInfo {
+    token_preview: string
+    created_at: string
+    last_used: string | null
+}
+
 function TaskDetail() {
     const { taskName } = useParams<{ taskName: string }>()
     const navigate = useNavigate()
     const [task, setTask] = useState<Task | null>(null)
-    const [apiToken, setApiToken] = useState<string>('')
+    const [apiTokens, setApiTokens] = useState<TokenInfo[]>([])
+    const [newToken, setNewToken] = useState<string>('')
     const [loading, setLoading] = useState(true)
 
     // Search state
@@ -66,6 +73,7 @@ function TaskDetail() {
         if (taskName) {
             loadTask()
             loadTaskStatus()
+            fetchTokens()
             // Delay loading KB content to avoid blocking initial page load
             setTimeout(() => loadKnowledgeBase(), 100)
         }
@@ -171,12 +179,37 @@ function TaskDetail() {
         }
     }
 
+    const fetchTokens = async () => {
+        try {
+            const response = await externalAPI.listTokens()
+            setApiTokens(response.data)
+        } catch (error) {
+            console.error('Failed to fetch tokens:', error)
+        }
+    }
+
     const handleGenerateToken = async () => {
         try {
             const response = await externalAPI.generateToken()
-            setApiToken(response.data.token)
+            setNewToken(response.data.token)
+            // 刷新 token 列表
+            await fetchTokens()
+            // 3秒后清空新token显示
+            setTimeout(() => setNewToken(''), 10000)
         } catch (error) {
             console.error('Failed to generate token:', error)
+        }
+    }
+
+    const handleDeleteToken = async (tokenHash: string) => {
+        if (!confirm('确定要删除这个 Token 吗？删除后使用该 Token 的应用将无法访问。')) {
+            return
+        }
+        try {
+            await externalAPI.deleteToken(tokenHash)
+            await fetchTokens()
+        } catch (error) {
+            console.error('Failed to delete token:', error)
         }
     }
 
@@ -578,16 +611,44 @@ function TaskDetail() {
                             <code className="code-block">{apiUrl}</code>
                         </div>
 
-                        {!apiToken ? (
-                            <button className="btn btn-secondary" onClick={handleGenerateToken}>
-                                Generate API Token
-                            </button>
-                        ) : (
-                            <div className="token-display">
-                                <label>API Token (Save this securely)</label>
-                                <code className="code-block token">{apiToken}</code>
+                        <div className="token-management">
+                            <div className="token-header">
+                                <label>API Tokens</label>
+                                <button className="btn btn-secondary btn-sm" onClick={handleGenerateToken}>
+                                    Generate New Token
+                                </button>
                             </div>
-                        )}
+
+                            {newToken && (
+                                <div className="new-token-alert">
+                                    <strong>⚠️ New Token Generated (Save it now!)</strong>
+                                    <code className="code-block token">{newToken}</code>
+                                    <small>This token will only be shown once. Please save it securely.</small>
+                                </div>
+                            )}
+
+                            {apiTokens.length > 0 ? (
+                                <div className="token-list">
+                                    {apiTokens.map((token) => (
+                                        <div key={token.token_preview} className="token-item">
+                                            <div className="token-info">
+                                                <code className="token-preview">{token.token_preview}</code>
+                                                <span className="token-date">Created: {new Date(token.created_at).toLocaleString()}</span>
+                                                {token.last_used && <span className="token-date">Last used: {new Date(token.last_used).toLocaleString()}</span>}
+                                            </div>
+                                            <button
+                                                className="btn btn-danger btn-sm"
+                                                onClick={() => handleDeleteToken(token.token_preview.split('...')[0] + token.token_preview.split('...')[1].replace(/\./g, ''))}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="no-tokens">No tokens yet. Generate one to access the API.</p>
+                            )}
+                        </div>
 
                         <div className="curl-example">
                             <label>Example cURL Command</label>

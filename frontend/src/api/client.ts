@@ -35,6 +35,7 @@ export const settingsAPI = {
 export const externalAPI = {
     generateToken: () => api.post('/external/tokens'),
     listTokens: () => api.get('/external/tokens'),
+    deleteToken: (tokenHash: string) => api.delete(`/external/tokens/${tokenHash}`),
     query: (taskName: string, data: any) => api.post(`/external/${taskName}/query`, data)
 }
 

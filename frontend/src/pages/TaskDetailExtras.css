@@ -486,3 +486,102 @@
 .schedule-modal .modal-body {
     padding: 0;
 }
+/* Token Management */
+.token-management {
+    margin-top: var(--space-lg);
+}
+
+.token-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+
+.token-header label {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.new-token-alert {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.new-token-alert strong {
+    display: block;
+    color: #856404;
+    margin-bottom: var(--space-sm);
+}
+
+.new-token-alert .code-block {
+    margin: var(--space-sm) 0;
+    background: white;
+    color: #212529;
+}
+
+.new-token-alert small {
+    display: block;
+    color: #856404;
+    font-size: var(--text-xs);
+    margin-top: var(--space-xs);
+}
+
+.token-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.token-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transition: all 0.2s ease;
+}
+
+.token-item:hover {
+    border-color: var(--color-accent-primary);
+}
+
+.token-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    flex: 1;
+}
+
+.token-preview {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.token-date {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+}
+
+.no-tokens {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-tertiary);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: var(--text-sm);
+}

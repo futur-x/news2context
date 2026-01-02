@@ -220,7 +220,7 @@ async def list_api_tokens():
     """列出所有 API Token (仅显示预览)"""
     token_data = _load_tokens()
     tokens = token_data.get("tokens", {})
-    
+
     result = []
     for token_hash, info in tokens.items():
         result.append(TokenInfo(
@@ -228,5 +228,20 @@ async def list_api_tokens():
             created_at=info.get("created_at"),
             last_used=info.get("last_used")
         ))
-    
+
     return result
+
+@router.delete("/external/tokens/{token_hash}")
+async def delete_api_token(token_hash: str):
+    """删除指定的 API Token"""
+    token_data = _load_tokens()
+    tokens = token_data.get("tokens", {})
+
+    if token_hash not in tokens:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    del tokens[token_hash]
+    token_data["tokens"] = tokens
+    _save_tokens(token_data)
+
+    return {"success": True, "message": "Token deleted successfully"}
